@@ -21,11 +21,10 @@
 **[Toker-express.js](https://github.com/DWTechs/Toker-express.js)** is an open source JWT management library for Express.js.  
 It includes @dwtechs/toker library and adds Express middlewares to be used in a node.js service.
 
-- Very lightweight
-- Thoroughly tested
-- Imported as EcmaScrypt module
-- Works in Javascript and Typescript
-- Written in Typescript
+- 🪶 Very lightweight
+- 🧪 Thoroughly tested
+- 🚚 Shipped as EcmaScrypt Express module
+- 📝 Written in Typescript
 
 
 ## Support
