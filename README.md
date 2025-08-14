@@ -8,9 +8,7 @@
 - [Support](#support)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [ES6](#es6)
-  - [Configure](#configure)
-  - [Environment variables](#environment-variables)
+- [Environment variables](#environment-variables)
 - [API Reference](#api-reference)
 - [options](#pwd-options)
 - [Logs](#logs)
@@ -47,8 +45,6 @@ $ npm i @dwtechs/passken-express
 
 ## Usage
 
-
-### ES6 / TypeScript
 
 ```javascript
 
@@ -114,38 +110,12 @@ router.post("/", addMany);
 
 ```
 
-### Configure
-
-You do not need to initialise the library using **pwd.init()** if the default config is fine for you.
-
-Passken will start with the following default password configuration : 
-
-```Javascript
-Options = {
-  len: 12,
-  num: true,
-  ucase: true,
-  lcase: true,
-  sym: false,
-  strict: true,
-  similarChars: false,
-};
-```
-
 
 ### Environment variables
 
-You do not need to intialise the library using **pwd.init()** if you are using the following environment variables:
+You can intialise the library using the following environment variables:
  
 ```bash
-  PWD_LENGTH,
-  PWD_NUMBERS,
-  PWD_UPPERCASE,
-  PWD_LOWERCASE,
-  PWD_SYMBOLS,
-  PWD_STRICT,
-  PWD_SIMILAR_CHARS,
-  PWD_SECRET,
   ACCESS_TOKEN_DURATION, 
   REFRESH_TOKEN_DURATION
   TOKEN_SECRET,
@@ -154,172 +124,11 @@ You do not need to intialise the library using **pwd.init()** if you are using t
 These environment variables will update the default values of the lib at start up.
 So you do not need to init the library in the code.
 
-Note that **PWD_SECRET** and **TOKEN_SECRET** are mandatory.
+Note that **TOKEN_SECRET** is mandatory.
 
 
 ## API Reference
 
-
-### Types
-
-```javascript
-
-type Options = {
-  len: number,
-  num: boolean,
-  ucase: boolean,
-  lcase: boolean,
-  sym: boolean,
-  strict: boolean,
-  similarChars: boolean,
-};
-
-```
-
-### PWD Functions
-
-```javascript
-
-/**
- * Initializes the password generation options for the Passken-express library.
- * 
- * This function sets the global password options that will be used by the `create` function
- * when generating random passwords. The options control password characteristics such as
- * length, character sets, and complexity requirements.
- * 
- * @param {Options} options - Password generation options from @dwtechs/passken
- * @param {number}  options.len - Password length (minimum characters)
- * @param {boolean} options.num - Include numbers in password
- * @param {boolean} options.ucase - Include uppercase letters
- * @param {boolean} options.lcase - Include lowercase letters  
- * @param {boolean} options.sym - Include symbols in password
- * @param {boolean} options.strict - Password must include at least one character from each enabled pool
- * @param {boolean} options.similarChars - Allow visually similar characters (l, I, 1, o, O, 0)
- * 
- * @returns {void}
- * 
- * **Input Properties:**
- * - `options` (Options object) - Password generation configuration
- * 
- * **Output Properties:**
- * - None (sets global configuration)
- * 
- * @example
- * ```typescript
- * import { init } from '@dwtechs/passken-express';
- * 
- * // Initialize with custom password options
- * init({
- *   len: 16,
- *   num: true,
- *   ucase: true,
- *   lcase: true,
- *   sym: true,
- *   strict: true,
- *   similarChars: false
- * });
- * ```
- */
-function init(options: Options): void {}
-
-/**
- * Express middleware to compare a user-provided password with a stored hashed password.
- * 
- * This middleware validates that a plaintext password from the request matches a hashed
- * password from the database. It extracts the password from the request body and the
- * hash from either the response rows or response object, then uses Passken's secure
- * comparison function to verify the match.
- * 
- * @param {Request} req - Express request object containing the password
- * @param {MyResponse} res - Express response object containing the database hash
- * @param {NextFunction} next - Express next function to continue middleware chain
- * 
- * @returns {void} Calls next() to continue, or next(error) on failure
- * 
- * **Input Properties Required:**
- * - `req.body.password` OR `req.body.pwd` (string) - User's plaintext password
- * - `res.rows[0].password` OR `res.rows[0].pwd` OR `res.password` OR `res.pwd` (string) - Hashed password from database
- * 
- * **Output Properties:**
- * - None (validation only - continues middleware chain on success)
- * 
- * @throws {Object} Will call next() with error object containing:
- *   - statusCode: 400 - When password is missing from request body
- *   - statusCode: 400 - When hash is missing from response data
- *   - statusCode: 401 - When password doesn't match the stored hash
- *   - statusCode: 400 - InvalidPasswordError from Passken compare() function
- *   - statusCode: 400 - InvalidBase64SecretError from Passken compare() function
- * 
- * @example
- * ```typescript
- * import { compare } from '@dwtechs/passken-express';
- * 
- * // Usage in Express route after database query
- * app.post('/login', getUserFromDB, compare, (req, res) => {
- *   res.json({ message: 'Login successful' });
- * });
- * 
- * // Request body should contain:
- * // { "password": "user-password" } or { "pwd": "user-password" }
- * 
- * // Response should contain hash from database:
- * // res.rows[0].password or res.rows[0].pwd or res.password or res.pwd
- * ```
- */
-function compare(req: Request, res: MyResponse, next: NextFunction): void {}
-
-/**
- * Express middleware to generate random passwords and encrypt them for multiple users.
- * 
- * This middleware generates secure random passwords for multiple user records and encrypts
- * them using Passken's encryption function. It processes an array of user objects in the
- * request body, adding both plaintext and encrypted password fields to each record.
- * The plaintext passwords can be sent to users (e.g., via email) while encrypted passwords
- * are stored in the database.
- * 
- * @param {Request} req - Express request object containing user records in body.rows
- * @param {Response} _res - Express response object (not used in this function)
- * @param {NextFunction} next - Express next function to continue middleware chain
- * 
- * @returns {void} Calls next() to continue, or next(error) on failure
- * 
- * **Input Properties Required:**
- * - `req.body.rows` (array) - Array of user objects to generate passwords for
- * 
- * **Output Properties:**
- * - `req.body.rows[i].pwd` (string) - Generated plaintext password for each user
- * - `req.body.rows[i].encryptedPwd` (string) - Encrypted password hash for database storage
- * 
- * @throws {Object} Will call next() with error object containing:
- *   - statusCode: 400 - When req.body.rows is missing or not an array
- *   - statusCode: 400 - InvalidPasswordError from Passken encrypt() function
- *   - statusCode: 400 - InvalidBase64SecretError from Passken encrypt() function
- * 
- * @example
- * ```typescript
- * import { create } from '@dwtechs/passken-express';
- * 
- * // Usage in Express route for bulk user creation
- * app.post('/users/bulk', create, saveUsersToDatabase, (req, res) => {
- *   // Send plaintext passwords to users via email
- *   req.body.rows.forEach(user => {
- *     sendPasswordEmail(user.email, user.pwd);
- *   });
- *   res.json({ message: 'Users created successfully' });
- * });
- * 
- * // Request body should contain:
- * // { "rows": [{ "name": "User1", "email": "user1@example.com" }, ...] }
- * 
- * // After processing, each row will have:
- * // { "name": "User1", "email": "user1@example.com", "pwd": "generated-password", "encryptedPwd": "encrypted-hash" }
- * ```
- */
-function create(req: Request, res: Response, next: NextFunction): void {}
-
-```
-
-### JWT Functions
 
 ```javascript
 
@@ -427,32 +236,6 @@ function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {
 
 ```
 
-### Password Comparison
-
-The function will look for a password value from the client request body :  
-
-```Javascript
-const pwd = req.body?.password || req.body?.pwd.
-```
-
-It will then look for the hashed password stored in the database :
-
-```Javascript
-const hash = res.rows[0].password || res.rows[0].pwd || res.password || res.pwd;
-```
-
-It will throw an error if the password or the hash are missing.
-It will throw an error if the password does not match the hash.
-
-### Password generation
-
-The function will loop through an array in **req.body.rows**.
-
-It will throw an error if **req.body.rows** is missing or empty.
-
-New **passwords** will be added into **req.body.rows[i].pwd**.
-Encrypted passwords will be added into **req.body.rows[i].encryptedPwd** .
-
 ### JWT Refresh
 
 This function will look for an ISS in the client request body :
@@ -495,35 +278,15 @@ req.body.decodedRefreshToken = decodedToken;
 ```
 
 
-## PWD Options
-
-Any of these can be passed into the options object for each function.
-
-| Name         | type    |              Description                                     | Default |  
-| :----------- | :------ | :----------------------------------------------------------- | :------ |
-| len	         | Integer | Minimal length of password.                                  | 12      |
-| num*	       | Boolean | use numbers in password.                                     | true    |
-| sym*	       | Boolean | use symbols in password                                      | true    |
-| lcase*	     | Boolean | use lowercase in password                                    | true    |
-| ucase*	     | Boolean | use uppercase letters in password.                           | true    |
-| strict	     | Boolean | password must include at least one character from each pool.	| true    |
-| similarChars | Boolean | allow close looking chars.                                   | false   | 
-
-*At least one of those options must be true.  
-
-Symbols used : !@#%*_-+=:;?><,./()
-Similar characters : l, I, 1, o, O, 0
-
-
 ## Logs
 
-**Passken-express.js** uses **[@dwtechs/Winstan](https://www.npmjs.com/package/@dwtechs/winstan)** library for logging.
+**Token-express.js** uses **[@dwtechs/Winstan](https://www.npmjs.com/package/@dwtechs/winstan)** library for logging.
 All logs are in debug mode. Meaning they should not appear in production mode.
 
 ## Contributors
 
-**Passken-express.js** is still in development and we would be glad to get all the help you can provide.
-To contribute please read **[contributor.md](https://github.com/DWTechs/Passken-express.js/blob/main/contributor.md)** for detailed installation guide.
+**Token-express.js** is still in development and we would be glad to get all the help you can provide.
+To contribute please read **[contributor.md](https://github.com/DWTechs/Token-express.js/blob/main/contributor.md)** for detailed installation guide.
 
 
 ## Stack
