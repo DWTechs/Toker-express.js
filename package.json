@@ -1,0 +1,51 @@
+{
+  "name": "@dwtechs/toker-express",
+  "version": "0.1.0",
+  "description": "Open source JWT management library for Express.js to sign, verify and parse bearer tokens safely.",
+  "keywords": [
+    "JWT",
+    "Express"
+  ],
+  "homepage": "https://github.com/DWTechs/Toker-express.js",
+  "main": "dist/toker-express",
+  "types": "dist/toker-express",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DWTechs/Toker-express.js"
+  },
+  "bugs": {
+    "url": "https://github.com/DWTechs/Toker-express.js/issues",
+    "email": ""
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Ludovic Cluber",
+    "email": "http://www.lcluber.com/contact",
+    "url": "http://www.lcluber.com"
+  },
+  "contributors": [],
+  "scripts": {
+    "start": "",
+    "prebuild": "npm install",
+    "build": "node ./scripts/clear && tsc && npm run rollup && node ./scripts/copy && npm run test",
+    "rollup:mjs": "rollup --config rollup.config.mjs",
+    "rollup:cjs": "rollup --config rollup.config.cjs.mjs",
+    "rollup": "npm run rollup:mjs",
+    "test": ""
+  },
+  "files": [
+    "dist/"
+  ],
+  "dependencies": {
+    "@dwtechs/checkard": "3.2.3",
+    "@dwtechs/toker": "0.1.0",
+    "@dwtechs/winstan": "0.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.0",
+    "@rollup/plugin-node-resolve": "15.3.0",
+    "core-js": "3.38.1",
+    "rollup": "4.24.0",
+    "typescript": "5.6.3"
+  }
+}

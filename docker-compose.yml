@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+
+  toker-express:
+    build: ./
+    container_name: toker-express
+    volumes:
+      - ./:/usr/src/app
+      - toker-express_node_modules:/usr/src/app/node_modules
+
+
+volumes:
+  toker-express_node_modules:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/node_modules
