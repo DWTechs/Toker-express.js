@@ -17,7 +17,7 @@
 
 ## Synopsis
 
-**[Toker-express.js](https://github.com/DWTechs/Toker-express.js)** is an open source JWT management library for Express.js.  
+**[Toker-express.js](https://github.com/DWTechs/Toker-express.js)** is an open source JWT management library for Express.js to refresh and decode tokens safely.  
 It includes @dwtechs/toker library and adds Express middlewares to be used in a node.js service.
 
 - 🪶 Very lightweight
@@ -37,7 +37,7 @@ The library uses node:crypto.
 ## Installation
 
 ```bash
-$ npm i @dwtechs/passken-express
+$ npm i @dwtechs/toker-express
 ```
 
 
@@ -46,7 +46,7 @@ $ npm i @dwtechs/passken-express
 
 ```javascript
 
-import * as pk from "@dwtechs/passken-express";
+import * as tk from "@dwtechs/toker-express";
 import express from "express";
 const router = express.Router();
 
@@ -70,7 +70,7 @@ pk.init(passwordOptions);
 // add users
 const addMany = [
   user.validate,
-  pk.create,
+  tk.create,
   user.addMany,
   mail.sendRegistration,
 ];
@@ -79,22 +79,22 @@ const addMany = [
 const login = [
   user.validate,
   user.getPwd,
-  pk.compare,
+  tk.compare,
   user.isActive,
 ];
 
 const addConsumer = [
   consumer.validate,
-  pk.decodeAccess,
-  pk.refresh,
+  tk.decodeAccess,
+  tk.refresh,
   consumer.addOne
 ];
 
 const refresh = [
   consumer.validate,
-  pk.decodeRefresh,
+  tk.decodeRefresh,
   consumer.match,
-  pk.refresh,
+  tk.refresh,
   consumer.updateOne,
 ];
 

@@ -1,7 +1,7 @@
 {
   "name": "@dwtechs/toker-express",
   "version": "0.1.0",
-  "description": "Open source JWT management library for Express.js to sign, verify and parse bearer tokens safely.",
+  "description": "Open source JWT management library for Express.js to refresh and decode tokens safely.",
   "keywords": [
     "JWT",
     "Express"
