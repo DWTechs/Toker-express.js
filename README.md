@@ -59,22 +59,22 @@ const add = [
   uEntity.normalize,
   uEntity.validate,
   login,
-  pk.refresh,
+  tk.refresh,
   cEntity.add,
 ];
 
 const refresh = [
   cEntity.validate,
-  pk.decodeAccess,
-  pk.decodeRefresh,
+  tk.decodeAccess,
+  tk.decodeRefresh,
   checkToken,
-  pk.refresh,
+  tk.refresh,
   cEntity.update,
 ];
 
 const del = [
   checkToken,
-  pk.decodeAccess,
+  tk.decodeAccess,
   cEntity.delete,
 ];
 
