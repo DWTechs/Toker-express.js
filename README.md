@@ -46,65 +46,50 @@ $ npm i @dwtechs/toker-express
 
 ```javascript
 
-import * as tk from "@dwtechs/toker-express";
+// @ts-check
+import * as tk from "@dwtechs/Toker-express";
 import express from "express";
 const router = express.Router();
 
-import user from "../controllers/user.js";
-import mail from "../controllers/mail.js";
-import consumer from "../controllers/consumer.js";
+import cEntity from "../entities/consumer.js";
+import uEntity from "../entities/user.js";
+import checkToken from "../middlewares/validators/check-token.js";
+import login from "../middlewares/login.js";
 
-const passwordOptions = {
-  len: 14,
-  num: true,
-  ucase: false,
-  lcase: false,
-  sym: false,
-  strict: true,
-  similarChars: true,
-};
-pk.init(passwordOptions);
-
-// middleware sub-stacks
-
-// add users
-const addMany = [
-  user.validate,
-  tk.create,
-  user.addMany,
-  mail.sendRegistration,
-];
-
-// Login user
-const login = [
-  user.validate,
-  user.getPwd,
-  tk.compare,
-  user.isActive,
-];
-
-const addConsumer = [
-  consumer.validate,
-  tk.decodeAccess,
-  tk.refresh,
-  consumer.addOne
+const add = [
+  uEntity.normalize,
+  uEntity.validate,
+  login,
+  pk.refresh,
+  cEntity.add,
 ];
 
 const refresh = [
-  consumer.validate,
-  tk.decodeRefresh,
-  consumer.match,
-  tk.refresh,
-  consumer.updateOne,
+  cEntity.validate,
+  pk.decodeAccess,
+  pk.decodeRefresh,
+  checkToken,
+  pk.refresh,
+  cEntity.update,
 ];
 
-// Routes
+const del = [
+  checkToken,
+  pk.decodeAccess,
+  cEntity.delete,
+];
+//Routes
 
-// log a user with his email & password
-router.post("/", login);
+// add a consumer. Log a user
+router.post("/", add);
 
-// Add new users
-router.post("/", addMany);
+// Update a consumer with new tokens
+// Used for login and refresh tokens
+router.put("/", refresh);
+
+// delete a consumer. Used when logging out
+router.delete("/", del);
+
 
 ```
 
@@ -125,14 +110,16 @@ So you do not need to init the library in the code.
 Note that **TOKEN_SECRET** is mandatory.
 
 Default values : 
-  - **ACCESS_TOKEN_DURATION**: 600 (10 mins)
-  - **REFRESH_TOKEN_DURATION**: 86400 (1 day)
 
+```javascript
+const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? ACCESS_TOKEN_DURATION : 600; // #10 * 60 => 10 mins
+const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_DURATION : 86400; // #24 * 60 * 60 => 1 day
+```
 
 ## API Reference
 
 
-```javascript
+```typescript
 
 /**
  * Refreshes the JWT tokens for a user.
