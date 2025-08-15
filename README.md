@@ -234,17 +234,16 @@ res.rows = [{ accessToken, refreshToken }];
 
 ### JWT Decoding
 
-decodeAccess() functions will look for a token in the client request body.
+decodeAccess() functions will look for a bearer in authorization headers.
 
 ```Javascript
-const token = req.body.accessToken;
-const ignoreExpiration = req.body.ignoreExpiration || false;
+const bearer = req.headers.authorization;
 ```
 
 It will then send the decoded token in the res object.
 
 ```Javascript
-req.body.decodedAccessToken = decodedToken;
+req.decodedAccessToken = decodedToken;
 ```
 
 decodeRefresh() functions will look for a token in the client request body.
@@ -256,7 +255,7 @@ const token = req.body.refreshToken;
 It will then send the decoded token in the res object.
 
 ```Javascript
-req.body.decodedRefreshToken = decodedToken;
+req.decodedRefreshToken = decodedToken;
 ```
 
 
