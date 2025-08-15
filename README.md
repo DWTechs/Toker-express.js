@@ -10,7 +10,6 @@
 - [Usage](#usage)
 - [Environment variables](#environment-variables)
 - [API Reference](#api-reference)
-- [options](#pwd-options)
 - [Logs](#logs)
 - [Contributors](#contributors)
 - [Stack](#stack)
