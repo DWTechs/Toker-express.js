@@ -78,7 +78,8 @@ const del = [
   pk.decodeAccess,
   cEntity.delete,
 ];
-//Routes
+
+// Routes
 
 // add a consumer. Log a user
 router.post("/", add);
