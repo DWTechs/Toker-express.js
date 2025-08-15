@@ -124,6 +124,10 @@ So you do not need to init the library in the code.
 
 Note that **TOKEN_SECRET** is mandatory.
 
+Default values : 
+  - **ACCESS_TOKEN_DURATION**: 600 (10 mins)
+  - **REFRESH_TOKEN_DURATION**: 86400 (1 day)
+
 
 ## API Reference
 
@@ -145,20 +149,13 @@ Note that **TOKEN_SECRET** is mandatory.
  * @returns {Promise<void>} Calls the next middleware function with an error if the issuer is invalid,
  *          otherwise proceeds to the next middleware function.
  * 
- * **Input Properties Required:**
- * - `req.decodedAccessToken.iss` OR `req.body.id` (number/string) - User ID/issuer for token generation
- * 
- * **Output Properties:**
- * - `res.rows[0].accessToken` (string) - New JWT access token
- * - `res.rows[0].refreshToken` (string) - New JWT refresh token
- * 
+ * @throws {InvalidIssuerError} If the issuer (iss) is not a string or number (HTTP 400)
+ * @throws {InvalidSecretsError} If the secrets array is empty or invalid (HTTP 500)
+ * @throws {InvalidDurationError} If the duration is not a positive number (HTTP 400)
+ * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
  * @throws {Object} Will call next() with error object containing:
  *   - statusCode: 400 - When iss (issuer) is missing or invalid
  *   - statusCode: 400 - When iss is not a valid number between 1 and 999999999
- *   - statusCode: 400 - InvalidIssuerError from Passken sign() function
- *   - statusCode: 500 - InvalidSecretsError from Passken sign() function
- *   - statusCode: 400 - InvalidDurationError from Passken sign() function
- *   - statusCode: 500 - SecretDecodingError from Passken sign() function
  */
 function refresh(req: Request, res: MyResponse, next: NextFunction): void {}
 
@@ -175,23 +172,16 @@ function refresh(req: Request, res: MyResponse, next: NextFunction): void {}
  * 
  * @returns {void} Calls the next middleware function, either with an error or successfully
  * 
- * **Input Properties Required:**
- * - `req.isProtected` (boolean) - Must be true to process the request
- * - `req.headers.authorization` (string) - Bearer token in format "Bearer <token>"
- * 
- * **Output Properties:**
- * - `req.decodedAccessToken` (object) - Decoded JWT payload
- * 
+ * @throws {MissingAuthorizationError} If the Authorization header is missing (HTTP 401)
+ * @throws {InvalidBearerFormatError} If the Authorization header format is invalid (HTTP 401)
+ * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
+ * @throws {ExpiredTokenError} If the token has expired (exp claim) (HTTP 401)
+ * @throws {InactiveTokenError} If the token cannot be used yet (nbf claim) (HTTP 401)
+ * @throws {InvalidSignatureError} If the token signature is invalid (HTTP 401)
+ * @throws {InvalidSecretsError} If the secrets configuration is invalid (HTTP 500)
+ * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
  * @throws {Object} Will call next() with error object containing:
- *   - statusCode: 401 - MissingAuthorizationError when Authorization header is missing
- *   - statusCode: 401 - InvalidBearerFormatError when Authorization header format is invalid
  *   - statusCode: 401 - When token is not a valid JWT format
- *   - statusCode: 401 - InvalidTokenError when token is malformed or has invalid structure
- *   - statusCode: 401 - TokenExpiredError when token has expired (ignored in this function)
- *   - statusCode: 401 - TokenNotActiveError when token cannot be used yet (nbf claim)
- *   - statusCode: 401 - InvalidSignatureError when token signature is invalid
- *   - statusCode: 500 - InvalidSecretsError when secrets configuration is invalid
- *   - statusCode: 500 - SecretDecodingError when secret cannot be decoded
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  * 
  * @example
@@ -214,20 +204,14 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction): void {}
  * 
  * @returns {Promise<void>} Calls the next middleware function with an error object if the token is invalid or missing required fields.
  * 
- * **Input Properties Required:**
- * - `req.body.refreshToken` (string) - JWT refresh token to decode and verify
- * 
- * **Output Properties:**
- * - `req.decodedRefreshToken` (object) - Decoded JWT refresh token payload
- * 
+ * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
+ * @throws {InvalidSecretsError} If the secrets configuration is invalid (HTTP 500)
+ * @throws {ExpiredTokenError} If the refresh token has expired (exp claim) (HTTP 401)
+ * @throws {InactiveTokenError} If the token cannot be used yet (nbf claim) (HTTP 401)
+ * @throws {InvalidSignatureError} If the token signature is invalid (HTTP 401)
+ * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
  * @throws {Object} Will call next() with error object containing:
  *   - statusCode: 401 - When refresh token is not a valid JWT format
- *   - statusCode: 401 - InvalidTokenError when token is malformed or has invalid structure
- *   - statusCode: 401 - TokenExpiredError when refresh token has expired
- *   - statusCode: 401 - TokenNotActiveError when token cannot be used yet (nbf claim)
- *   - statusCode: 401 - InvalidSignatureError when token signature is invalid
- *   - statusCode: 500 - InvalidSecretsError when secrets configuration is invalid
- *   - statusCode: 500 - SecretDecodingError when secret cannot be decoded
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  */
 function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {}

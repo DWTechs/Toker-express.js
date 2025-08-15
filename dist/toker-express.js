@@ -38,10 +38,11 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
     });
 };
 const { TOKEN_SECRET, ACCESS_TOKEN_DURATION, REFRESH_TOKEN_DURATION } = process.env;
+const TE_PREFIX = "Toker-express: ";
 if (!TOKEN_SECRET)
-    throw new Error("Toker: Missing TOKEN_SECRET environment variable");
+    throw new Error(`${TE_PREFIX} Missing TOKEN_SECRET environment variable`);
 if (!isString(TOKEN_SECRET, "!0"))
-    throw new Error("Toker: Invalid TOKEN_SECRET environment variable");
+    throw new Error(`${TE_PREFIX} Invalid TOKEN_SECRET environment variable`);
 const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? ACCESS_TOKEN_DURATION : 600;
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_DURATION : 86400;
@@ -50,7 +51,7 @@ function refresh(req, res, next) {
         var _a, _b, _c;
         const iss = ((_a = req.decodedAccessToken) === null || _a === void 0 ? void 0 : _a.iss) || ((_c = (_b = req.body) === null || _b === void 0 ? void 0 : _b.id) === null || _c === void 0 ? void 0 : _c.toString());
         if (!isValidNumber(iss, 1, 999999999, false))
-            return next({ statusCode: 400, message: "Passken: Missing iss" });
+            return next({ statusCode: 400, message: `${TE_PREFIX} Missing iss` });
         log.debug(`Create tokens for user ${iss}`);
         let accessToken;
         let refreshToken;
@@ -79,7 +80,7 @@ function decodeAccess(req, _res, next) {
     }
     log.debug(`accessToken : ${t}`);
     if (!isJWT(t))
-        return next({ statusCode: 401, message: "Passken: Invalid access token" });
+        return next({ statusCode: 401, message: `${TE_PREFIX} Invalid access token` });
     let decodedToken = null;
     try {
         decodedToken = verify(t, secrets, true);
@@ -88,7 +89,7 @@ function decodeAccess(req, _res, next) {
         return next(e);
     }
     if (!isValidNumber(decodedToken.iss, 1, 999999999, false))
-        return next({ statusCode: 400, message: "Passken: Missing iss" });
+        return next({ statusCode: 400, message: `${TE_PREFIX} Missing iss` });
     log.debug(`Decoded access token : ${JSON.stringify(decodedToken)}`);
     req.decodedAccessToken = decodedToken;
     next();
@@ -98,7 +99,7 @@ function decodeRefresh(req, _res, next) {
         const token = req.body.refreshToken;
         log.debug(`decodeRefresh(token=${token})`);
         if (!isJWT(token))
-            return next({ statusCode: 401, message: "Passken: Invalid refresh token" });
+            return next({ statusCode: 401, message: `${TE_PREFIX} Invalid refresh token` });
         let decodedToken = null;
         try {
             decodedToken = verify(token, secrets, false);
@@ -107,7 +108,7 @@ function decodeRefresh(req, _res, next) {
             return next(e);
         }
         if (!isValidNumber(decodedToken.iss, 1, 999999999, false))
-            return next({ statusCode: 400, message: "Passken: Missing iss" });
+            return next({ statusCode: 400, message: `${TE_PREFIX} Missing iss` });
         log.debug(`Decoded refresh token : ${JSON.stringify(req.decodedRefreshToken)}`);
         req.decodedRefreshToken = decodedToken;
         next();
