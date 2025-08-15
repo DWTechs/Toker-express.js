@@ -31,7 +31,6 @@ It includes @dwtechs/toker library and adds Express middlewares to be used in a 
 - node: 22
 
 This is the oldest targeted versions.  
-The library uses node:crypto.   
 
 
 ## Installation
