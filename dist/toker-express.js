@@ -44,8 +44,8 @@ if (!TOKEN_SECRET)
 if (!isString(TOKEN_SECRET, "!0"))
     throw new Error(`${TE_PREFIX}Invalid TOKEN_SECRET environment variable`);
 const secrets = [TOKEN_SECRET];
-const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? ACCESS_TOKEN_DURATION : 600;
-const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_DURATION : 86400;
+const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600;
+const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400;
 function refresh(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c;

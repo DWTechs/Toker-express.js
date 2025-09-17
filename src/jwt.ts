@@ -21,8 +21,8 @@ if (!isString(TOKEN_SECRET, "!0"))
   throw new Error(`${TE_PREFIX}Invalid TOKEN_SECRET environment variable`);
 
 const secrets = [TOKEN_SECRET];
-const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? ACCESS_TOKEN_DURATION : 600; // #10 * 60 => 10 mins
-const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_DURATION : 86400; // #24 * 60 * 60 => 1 day
+const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600; // #10 * 60 => 10 mins
+const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400; // #24 * 60 * 60 => 1 day
 
 
 /**

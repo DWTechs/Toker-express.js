@@ -31,7 +31,7 @@
     "rollup:mjs": "rollup --config rollup.config.mjs",
     "rollup:cjs": "rollup --config rollup.config.cjs.mjs",
     "rollup": "npm run rollup:mjs",
-    "test": ""
+    "test": "jest"
   },
   "files": [
     "dist/"
@@ -42,9 +42,12 @@
     "@dwtechs/winstan": "0.4.0"
   },
   "devDependencies": {
-    "@types/express": "5.0.0",
+    "@babel/preset-env": "7.26.0",
     "@rollup/plugin-node-resolve": "15.3.0",
+    "@types/express": "5.0.0",
+    "babel-jest": "29.7.0",
     "core-js": "3.38.1",
+    "jest": "29.7.0",
     "rollup": "4.24.0",
     "typescript": "5.6.3"
   }
