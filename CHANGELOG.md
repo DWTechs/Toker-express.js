@@ -1,3 +1,7 @@
+# 0.1.2 (Sep 17th 2025)
+
+  - ACCESS_TOKEN_DURATION and REFRESH_TOKEN_DURATION are now properly parsed as numbers
+
 
 # 0.1.1 (Sep 10th 2025)
 
