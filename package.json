@@ -31,7 +31,7 @@
     "rollup:mjs": "rollup --config rollup.config.mjs",
     "rollup:cjs": "rollup --config rollup.config.cjs.mjs",
     "rollup": "npm run rollup:mjs",
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "files": [
     "dist/"
