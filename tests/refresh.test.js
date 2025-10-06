@@ -37,7 +37,7 @@ describe("refresh middleware", () => {
       body: {}
     };
     res = {
-      rows: []
+      locals: {}
     };
     next = jest.fn();
   });
@@ -54,11 +54,12 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
-      expect(typeof res.rows[0].accessToken).toBe("string");
-      expect(typeof res.rows[0].refreshToken).toBe("string");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
+      expect(typeof res.locals.accessToken).toBe("string");
+      expect(typeof res.locals.refreshToken).toBe("string");
     });
 
     it("should generate tokens when valid iss is provided in req.body.id", async () => {
@@ -67,9 +68,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should prioritize decodedAccessToken.iss over req.body.id", async () => {
@@ -79,9 +81,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should handle iss as string number", async () => {
@@ -90,9 +93,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should handle minimum valid iss value (1)", async () => {
@@ -101,9 +105,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should handle maximum valid iss value (999999999)", async () => {
@@ -112,9 +117,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
   });
@@ -128,7 +134,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when iss is 0", async () => {
@@ -140,7 +147,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when iss is negative", async () => {
@@ -152,7 +160,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when iss exceeds maximum value", async () => {
@@ -164,7 +173,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when iss is not a number", async () => {
@@ -176,7 +186,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when iss is null", async () => {
@@ -188,7 +199,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when iss is undefined", async () => {
@@ -200,7 +212,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should return error when req.body.id is invalid string", async () => {
@@ -212,7 +225,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
   });
@@ -226,9 +240,10 @@ describe("refresh middleware", () => {
 
       // In successful case, next() is called without arguments
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty('accessToken');
-      expect(res.rows[0]).toHaveProperty('refreshToken');
+      expect(res.locals).toHaveProperty('accessToken');
+      expect(res.locals).toHaveProperty('refreshToken');
+      expect(req.body).toHaveProperty('accessToken');
+      expect(req.body).toHaveProperty('refreshToken');
     });
 
   });
@@ -241,9 +256,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should handle empty req.body", async () => {
@@ -255,7 +271,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should handle missing decodedAccessToken", async () => {
@@ -265,9 +282,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should handle req.body.id as boolean false (falsy)", async () => {
@@ -279,7 +297,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
     it("should handle req.body.id as empty string", async () => {
@@ -291,7 +310,8 @@ describe("refresh middleware", () => {
         statusCode: 400,
         message: "Toker-express: Missing iss"
       });
-      expect(res.rows).toHaveLength(0);
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
     });
 
   });
@@ -304,9 +324,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
+      expect(res.locals).toHaveProperty('accessToken');
+      expect(res.locals).toHaveProperty('refreshToken');
       
-      const { accessToken, refreshToken } = res.rows[0];
+      const { accessToken, refreshToken } = res.locals;
       
       // Basic JWT format validation (3 parts separated by dots)
       expect(accessToken.split('.').length).toBe(3);
@@ -326,17 +347,17 @@ describe("refresh middleware", () => {
 
       // First call
       await refresh(req, res, next);
-      const firstTokens = res.rows[0];
+      const firstTokens = { ...res.locals };
 
-      // Reset res.rows for second call
-      res.rows = [];
+      // Reset res.locals for second call
+      res.locals = {};
       
       // Wait a bit to ensure different timestamps
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Second call
       await refresh(req, res, next);
-      const secondTokens = res.rows[0];
+      const secondTokens = { ...res.locals };
 
       // Tokens should be different due to different timestamps
       expect(firstTokens.accessToken).not.toBe(secondTokens.accessToken);
@@ -359,9 +380,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
 
       // Restore original values
       process.env.ACCESS_TOKEN_DURATION = originalAccess;
@@ -380,9 +402,10 @@ describe("refresh middleware", () => {
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
-      expect(res.rows).toHaveLength(1);
-      expect(res.rows[0]).toHaveProperty("accessToken");
-      expect(res.rows[0]).toHaveProperty("refreshToken");
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body).toHaveProperty("accessToken");
+      expect(req.body).toHaveProperty("refreshToken");
 
       // Restore original values
       process.env.ACCESS_TOKEN_DURATION = originalAccess;

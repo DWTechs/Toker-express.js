@@ -1,4 +1,3 @@
-
 // Extend Express Request interface
 declare global {
   namespace Express {
@@ -9,3 +8,6 @@ declare global {
     }
   }
 }
+
+// Export empty object to make this file a module
+export {};

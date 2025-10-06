@@ -63,7 +63,10 @@ function refresh(req, res, next) {
             return next(err);
         }
         log.debug(`refreshToken='${refreshToken}', accessToken='${accessToken}'`);
-        res.rows = [{ accessToken, refreshToken }];
+        res.locals.accessToken = accessToken;
+        res.locals.refreshToken = refreshToken;
+        req.body.accessToken = accessToken;
+        req.body.refreshToken = refreshToken;
         next();
     });
 }

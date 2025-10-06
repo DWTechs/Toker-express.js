@@ -25,7 +25,6 @@ https://github.com/DWTechs/Toker-express.js
 */
 
 import type { Request, Response, NextFunction } from 'express';
-import type { MyResponse } from './interfaces';
 
 // Extend Express Request interface globally
 declare global {
@@ -38,7 +37,7 @@ declare global {
   }
 }
 
-declare function refresh(req: Request, res: MyResponse, next: NextFunction): Promise<void>;
+declare function refresh(req: Request, res: Response, next: NextFunction): Promise<void>;
 declare function decodeAccess(req: Request, _res: Response, next: NextFunction): void;
 declare function decodeRefresh(req: Request, _res: Response, next: NextFunction): Promise<void>;
 

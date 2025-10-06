@@ -2,6 +2,7 @@ import { sign, verify, parseBearer } from "@dwtechs/toker";
 import { isJWT, isNumber, isString, isValidNumber } from "@dwtechs/checkard";
 import { log } from "@dwtechs/winstan";
 import type { Request, Response, NextFunction } from 'express';
+import './interfaces'; // Import to ensure global augmentation is applied
 
 const { 
   TOKEN_SECRET, 
