@@ -2,6 +2,7 @@
 [![License: MIT](https://img.shields.io/npm/l/@dwtechs/toker-express.svg?color=brightgreen)](https://opensource.org/licenses/MIT)
 [![npm version](https://badge.fury.io/js/%40dwtechs%2Ftoker-express.svg)](https://www.npmjs.com/package/@dwtechs/toker-express)
 [![last version release date](https://img.shields.io/github/release-date/DWTechs/Toker-express.js)](https://www.npmjs.com/package/@dwtechs/toker-express)
+![Jest:coverage](https://img.shields.io/badge/Jest:coverage-83%25-brightgreen.svg)
 
 
 - [Synopsis](#synopsis)
