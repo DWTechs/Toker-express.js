@@ -1,8 +1,3 @@
-import type { Response } from 'express';
-
-export interface MyResponse extends Response {
-  rows?: object[];
-}
 
 // Extend Express Request interface
 declare global {

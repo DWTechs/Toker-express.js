@@ -124,13 +124,13 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_
 /**
  * Refreshes the JWT tokens for a user.
  *
- * This function generates new access and refresh tokens for a user based on the provided
+ * This function generates new access and refresh tokens for a consumer based on the provided
  * decoded access token or user ID in the request body. It validates the issuer (iss) and
  * creates new tokens if the validation is successful. The new tokens are then added to the
- * response object.
+ * response local and the request body objects.
  *
- * @param {Request} req - The request object containing the decoded access token or user ID.
- * @param {MyResponse} res - The response object where the new tokens will be added.
+ * @param {Request} req - The request object containing the decoded access token or user ID. Where the new tokens will be added
+ * @param {Response} res - The response object where the new tokens will be added.
  * @param {NextFunction} next - The next middleware function in the Express.js request-response cycle.
  *
  * @returns {Promise<void>} Calls the next middleware function with an error if the issuer is invalid,
@@ -142,9 +142,8 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_
  * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
  * @throws {Object} Will call next() with error object containing:
  *   - statusCode: 400 - When iss (issuer) is missing or invalid
- *   - statusCode: 400 - When iss is not a valid number between 1 and 999999999
  */
-function refresh(req: Request, res: MyResponse, next: NextFunction): void {}
+function refresh(req: Request, res: Response, next: NextFunction): void {}
 
 /**
  * Express middleware function to decode and verify an access token from the Authorization header.
@@ -213,10 +212,13 @@ This function will look for an ISS in the client request body :
 const iss = req.body.decodedAccessToken?.iss || req.body?.id?.toString();
 ```
 
-It will then send both new refresh and access tokens in the res object.
+It will then send both new refresh and access tokens in the res.locals and req.body objects.
 
 ```Javascript
-res.rows = [{ accessToken, refreshToken }];
+res.locals.accessToken = accessToken;
+res.locals.refreshToken = refreshToken;
+req.body.accessToken = accessToken;
+req.body.refreshToken = refreshToken;
 ```
 
 ### JWT Decoding

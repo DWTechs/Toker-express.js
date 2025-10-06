@@ -2,7 +2,6 @@ import { sign, verify, parseBearer } from "@dwtechs/toker";
 import { isJWT, isNumber, isString, isValidNumber } from "@dwtechs/checkard";
 import { log } from "@dwtechs/winstan";
 import type { Request, Response, NextFunction } from 'express';
-import type { MyResponse } from "./interfaces";
 
 const { 
   TOKEN_SECRET, 
@@ -28,13 +27,13 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
 /**
  * Refreshes the JWT tokens for a user.
  *
- * This function generates new access and refresh tokens for a user based on the provided
+ * This function generates new access and refresh tokens for a consumer based on the provided
  * decoded access token or user ID in the request body. It validates the issuer (iss) and
  * creates new tokens if the validation is successful. The new tokens are then added to the
- * response object.
+ * response local and the request body objects.
  *
- * @param {Request} req - The request object containing the decoded access token or user ID.
- * @param {MyResponse} res - The response object where the new tokens will be added.
+ * @param {Request} req - The request object containing the decoded access token or user ID. Where the new tokens will be added
+ * @param {Response} res - The response object where the new tokens will be added.
  * @param {NextFunction} next - The next middleware function in the Express.js request-response cycle.
  *
  * @returns {Promise<void>} Calls the next middleware function with an error if the issuer is invalid,
@@ -46,9 +45,8 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
  * @throws {Object} Will call next() with error object containing:
  *   - statusCode: 400 - When iss (issuer) is missing or invalid
- *   - statusCode: 400 - When iss is not a valid number between 1 and 999999999
  */
-async function refresh(req: Request, res: MyResponse, next: NextFunction) {
+async function refresh(req: Request, res: Response, next: NextFunction) {
   const iss = req.decodedAccessToken?.iss || req.body?.id?.toString();
 
   if (!isValidNumber(iss, 1, 999999999, false))
@@ -65,7 +63,12 @@ async function refresh(req: Request, res: MyResponse, next: NextFunction) {
     return next(err);
   }
   log.debug(`refreshToken='${refreshToken}', accessToken='${accessToken}'`);
-  res.rows = [{ accessToken, refreshToken }];
+
+  res.locals.accessToken = accessToken;
+  res.locals.refreshToken = refreshToken;
+  req.body.accessToken = accessToken;
+  req.body.refreshToken = refreshToken;
+  
   next();
 
 }
