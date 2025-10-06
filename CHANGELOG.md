@@ -1,6 +1,9 @@
-# 0.1.2 (Sep 17th 2025)
+# 0.1.2 (Oct 06th 2025)
 
-  - ACCESS_TOKEN_DURATION and REFRESH_TOKEN_DURATION are now properly parsed as numbers
+  - ACCESS_TOKEN_DURATION and REFRESH_TOKEN_DURATION are now parsed as numbers
+  - Removed MyResponse interface dependency
+  - Updated refresh function to use standard Express Response interface
+  - Tokens are now stored in both res.locals and req.body instead of res.rows for better flexibility
 
 
 # 0.1.1 (Sep 10th 2025)
