@@ -37,7 +37,7 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  * @param {Response} res - The response object where the new tokens will be added.
  * @param {NextFunction} next - The next middleware function in the Express.js request-response cycle.
  *
- * @returns {Promise<void>} Calls the next middleware function with an error if the issuer is invalid,
+ * @returns {void} Calls the next middleware function with an error if the issuer is invalid,
  *          otherwise proceeds to the next middleware function.
  * 
  * @throws {InvalidIssuerError} If the issuer (iss) is not a string or number (HTTP 400)
@@ -47,7 +47,7 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  * @throws {Object} Will call next() with error object containing:
  *   - statusCode: 400 - When iss (issuer) is missing or invalid
  */
-async function refresh(req: Request, res: Response, next: NextFunction) {
+function refresh(req: Request, res: Response, next: NextFunction): void {
   const iss = req.decodedAccessToken?.iss || req.body?.id?.toString();
 
   if (!isValidNumber(iss, 1, 999999999, false))
@@ -110,7 +110,7 @@ async function refresh(req: Request, res: Response, next: NextFunction) {
  * };
  * 
  */
-function decodeAccess(req: Request, _res: Response, next: NextFunction) {
+function decodeAccess(req: Request, _res: Response, next: NextFunction): void {
   
   log.debug(`${LOGS_PREFIX}decode access token`);
   
@@ -151,7 +151,7 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction) {
  * @param {Response} _res - The response object (not used in this function).
  * @param {NextFunction} next - The next middleware function to be called.
  * 
- * @returns {Promise<void>} Calls the next middleware function with an error object if the token is invalid or missing required fields.
+ * @returns {void} Calls the next middleware function with an error object if the token is invalid or missing required fields.
  * 
  * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
  * @throws {InvalidSecretsError} If the secrets configuration is invalid (HTTP 500)
@@ -163,7 +163,7 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction) {
  *   - statusCode: 401 - When refresh token is not a valid JWT format
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  */
-async function decodeRefresh(req: Request, _res: Response, next: NextFunction) {
+function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {
   const token = req.body.refreshToken;
   log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
 

@@ -134,7 +134,7 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_
  * @param {Response} res - The response object where the new tokens will be added.
  * @param {NextFunction} next - The next middleware function in the Express.js request-response cycle.
  *
- * @returns {Promise<void>} Calls the next middleware function with an error if the issuer is invalid,
+ * @returns {void} Calls the next middleware function with an error if the issuer is invalid,
  *          otherwise proceeds to the next middleware function.
  * 
  * @throws {InvalidIssuerError} If the issuer (iss) is not a string or number (HTTP 400)
