@@ -126,12 +126,12 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_
  * Refreshes the JWT tokens for a user.
  *
  * This function generates new access and refresh tokens for a consumer based on the provided
- * decoded access token or user ID in the request body. It validates the issuer (iss) and
+ * decoded access token from req.decodedAccessToken or user ID from req.body.rows[0].id. It validates the issuer (iss) and
  * creates new tokens if the validation is successful. The new tokens are then added to the
- * response local and the request body objects.
+ * response locals object and optionally to req.body.rows[0] if rows is an array with at least one element.
  *
- * @param {Request} req - The request object containing the decoded access token or user ID. Where the new tokens will be added
- * @param {Response} res - The response object where the new tokens will be added.
+ * @param {Request} req - The request object containing req.decodedAccessToken or req.body.rows[0].id.
+ * @param {Response} res - The response object where the new tokens will be added in res.locals.
  * @param {NextFunction} next - The next middleware function in the Express.js request-response cycle.
  *
  * @returns {void} Calls the next middleware function with an error if the issuer is invalid,
@@ -150,7 +150,7 @@ function refresh(req: Request, res: Response, next: NextFunction): void {}
  * Express middleware function to decode and verify an access token from the Authorization header.
  * 
  * This middleware extracts the JWT access token from the Authorization header, validates its format,
- * verifies its signature, and attaches the decoded token to the request object for use by subsequent
+ * verifies its signature, and attaches the decoded token to req.decodedAccessToken for use by subsequent
  * middleware. It only processes requests that have `req.isProtected` set to true.
  * 
  * @param {Request} req - The Express request object containing the Authorization header
@@ -171,14 +171,6 @@ function refresh(req: Request, res: Response, next: NextFunction): void {}
  *   - statusCode: 401 - When token is not a valid JWT format
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  * 
- * @example
- * ```typescript
- * // Usage in Express route with protection middleware
- * const protect = (req: Request, res: Response, next: NextFunction) => {
- *   req.isProtected = true;
- *   next();
- * };
- * 
  */
 function decodeAccess(req: Request, _res: Response, next: NextFunction): void {}
 
@@ -189,7 +181,7 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction): void {}
  * @param {Response} _res - The response object (not used in this function).
  * @param {NextFunction} next - The next middleware function to be called.
  * 
- * @returns {Promise<void>} Calls the next middleware function with an error object if the token is invalid or missing required fields.
+ * @returns {void} Calls the next middleware function with an error object if the token is invalid or required fields are missing.
  * 
  * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
  * @throws {InvalidSecretsError} If the secrets configuration is invalid (HTTP 500)
@@ -210,7 +202,7 @@ function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {
 This function will look for an ISS in the client request body :
 
 ```Javascript
-const iss = req.body.decodedAccessToken?.iss || req.body?.id?.toString();
+const iss = req.decodedAccessToken?.iss || (isArray(req.body.rows, null, 1) ? req.body.rows[0]?.id?.toString() : null);
 ```
 
 It will then send both new refresh and access tokens in the res.locals and req.body objects.
@@ -218,8 +210,11 @@ It will then send both new refresh and access tokens in the res.locals and req.b
 ```Javascript
 res.locals.accessToken = accessToken;
 res.locals.refreshToken = refreshToken;
-req.body.accessToken = accessToken;
-req.body.refreshToken = refreshToken;
+
+if (rowsIsArray) {
+  req.body.rows[0].accessToken = accessToken;
+  req.body.rows[0].refreshToken = refreshToken;
+}
 ```
 
 ### JWT Decoding

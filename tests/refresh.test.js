@@ -56,47 +56,50 @@ describe("refresh middleware", () => {
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
       expect(typeof res.locals.accessToken).toBe("string");
       expect(typeof res.locals.refreshToken).toBe("string");
+      // Tokens should not be in req.body.rows when using decodedAccessToken
+      expect(req.body.rows).toBeUndefined();
     });
 
-    it("should generate tokens when valid iss is provided in req.body.id", async () => {
-      req.body.id = 54321;
+    it("should generate tokens when valid iss is provided in req.body.rows[0].id", async () => {
+      req.body.rows = [{ id: 54321 }];
 
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
+      expect(typeof req.body.rows[0].accessToken).toBe("string");
+      expect(typeof req.body.rows[0].refreshToken).toBe("string");
     });
 
-    it("should prioritize decodedAccessToken.iss over req.body.id", async () => {
+    it("should prioritize decodedAccessToken.iss over req.body.rows[0].id", async () => {
       req.decodedAccessToken = { iss: 11111 };
-      req.body.id = 22222;
+      req.body.rows = [{ id: 22222 }];
 
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
+      // Tokens should not be in rows when decodedAccessToken is used
+      expect(req.body.rows[0].accessToken).toBeUndefined();
+      expect(req.body.rows[0].refreshToken).toBeUndefined();
     });
 
-    it("should handle iss as string number", async () => {
-      req.body.id = "98765";
+    it("should handle iss as string number in rows", async () => {
+      req.body.rows = [{ id: "98765" }];
 
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
     });
 
     it("should handle minimum valid iss value (1)", async () => {
@@ -107,8 +110,6 @@ describe("refresh middleware", () => {
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
     });
 
     it("should handle maximum valid iss value (999999999)", async () => {
@@ -119,8 +120,24 @@ describe("refresh middleware", () => {
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
+    });
+
+    it("should handle rows array with multiple items (only first row gets tokens)", async () => {
+      req.body.rows = [
+        { id: 11111 },
+        { id: 22222 },
+        { id: 33333 }
+      ];
+
+      await refresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      expect(res.locals).toHaveProperty("accessToken");
+      expect(res.locals).toHaveProperty("refreshToken");
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
+      expect(req.body.rows[1].accessToken).toBeUndefined();
+      expect(req.body.rows[2].accessToken).toBeUndefined();
     });
 
   });
@@ -128,6 +145,45 @@ describe("refresh middleware", () => {
   describe("Invalid issuer scenarios", () => {
 
     it("should return error when no iss is provided", async () => {
+      await refresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 400,
+        message: "Toker-express: Missing iss"
+      });
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
+    });
+
+    it("should return error when rows is not an array", async () => {
+      req.body.rows = { id: 12345 }; // Object instead of array
+
+      await refresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 400,
+        message: "Toker-express: Missing iss"
+      });
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
+    });
+
+    it("should return error when rows is an empty array", async () => {
+      req.body.rows = [];
+
+      await refresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 400,
+        message: "Toker-express: Missing iss"
+      });
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
+    });
+
+    it("should return error when rows[0] has no id", async () => {
+      req.body.rows = [{ name: "test" }];
+
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith({
@@ -216,8 +272,8 @@ describe("refresh middleware", () => {
       expect(res.locals.refreshToken).toBeUndefined();
     });
 
-    it("should return error when req.body.id is invalid string", async () => {
-      req.body.id = "not-a-number";
+    it("should return error when rows[0].id is invalid string", async () => {
+      req.body.rows = [{ id: "not-a-number" }];
 
       await refresh(req, res, next);
 
@@ -242,24 +298,22 @@ describe("refresh middleware", () => {
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty('accessToken');
       expect(res.locals).toHaveProperty('refreshToken');
-      expect(req.body).toHaveProperty('accessToken');
-      expect(req.body).toHaveProperty('refreshToken');
     });
 
   });
 
   describe("Edge cases and data validation", () => {
 
-    it("should handle req.body.id.toString() when id is number", async () => {
-      req.body.id = 12345;
+    it("should handle rows[0].id.toString() when id is number", async () => {
+      req.body.rows = [{ id: 12345 }];
 
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
     });
 
     it("should handle empty req.body", async () => {
@@ -277,19 +331,19 @@ describe("refresh middleware", () => {
 
     it("should handle missing decodedAccessToken", async () => {
       req.decodedAccessToken = undefined;
-      req.body.id = 12345;
+      req.body.rows = [{ id: 12345 }];
 
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
     });
 
-    it("should handle req.body.id as boolean false (falsy)", async () => {
-      req.body.id = false;
+    it("should handle rows[0].id as boolean false (falsy)", async () => {
+      req.body.rows = [{ id: false }];
 
       await refresh(req, res, next);
 
@@ -301,8 +355,21 @@ describe("refresh middleware", () => {
       expect(res.locals.refreshToken).toBeUndefined();
     });
 
-    it("should handle req.body.id as empty string", async () => {
-      req.body.id = "";
+    it("should handle rows[0].id as empty string", async () => {
+      req.body.rows = [{ id: "" }];
+
+      await refresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 400,
+        message: "Toker-express: Missing iss"
+      });
+      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.refreshToken).toBeUndefined();
+    });
+
+    it("should handle rows[0] being null", async () => {
+      req.body.rows = [null];
 
       await refresh(req, res, next);
 
@@ -364,6 +431,29 @@ describe("refresh middleware", () => {
       expect(firstTokens.refreshToken).not.toBe(secondTokens.refreshToken);
     });
 
+    it("should generate tokens in both res.locals and req.body.rows[0] when using rows", async () => {
+      req.body.rows = [{ id: 12345, name: "Test User" }];
+
+      await refresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      
+      // Tokens in res.locals
+      expect(res.locals).toHaveProperty('accessToken');
+      expect(res.locals).toHaveProperty('refreshToken');
+      
+      // Tokens in req.body.rows[0]
+      expect(req.body.rows[0]).toHaveProperty('accessToken');
+      expect(req.body.rows[0]).toHaveProperty('refreshToken');
+      
+      // Both should have the same tokens
+      expect(res.locals.accessToken).toBe(req.body.rows[0].accessToken);
+      expect(res.locals.refreshToken).toBe(req.body.rows[0].refreshToken);
+      
+      // Original data should be preserved
+      expect(req.body.rows[0].name).toBe("Test User");
+    });
+
   });
 
   describe("Environment variables handling", () => {
@@ -382,8 +472,6 @@ describe("refresh middleware", () => {
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
 
       // Restore original values
       process.env.ACCESS_TOKEN_DURATION = originalAccess;
@@ -404,8 +492,6 @@ describe("refresh middleware", () => {
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      expect(req.body).toHaveProperty("accessToken");
-      expect(req.body).toHaveProperty("refreshToken");
 
       // Restore original values
       process.env.ACCESS_TOKEN_DURATION = originalAccess;

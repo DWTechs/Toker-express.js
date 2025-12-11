@@ -1,3 +1,8 @@
+# 0.2.0 (Dec 11th 2025)
+
+  - New tokens from Refresh() function are now stored in res.locals and optionally added in req.body.rows[0] if rows is an array with at least one element
+  - refresh function now looks for user ID in req.body.rows[0].id instead of req.body.id
+
 # 0.1.3 (Oct 30th 2025)
 
   - Converted all middleware functions from async to synchronous
