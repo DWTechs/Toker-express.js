@@ -17,7 +17,7 @@
   ### build lib : 
   ```bash
   $ cd Toker-express.js/
-  $ docker-compose run winstan
+  $ docker-compose run toker-express
   ```
   
 OR

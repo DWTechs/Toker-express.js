@@ -25,18 +25,9 @@ https://github.com/DWTechs/Toker-express.js
 */
 
 import { sign, parseBearer, verify } from '@dwtechs/toker';
-import { isString, isNumber, isValidNumber, isJWT } from '@dwtechs/checkard';
+import { isString, isNumber, isArray, isValidNumber, isJWT } from '@dwtechs/checkard';
 import { log } from '@dwtechs/winstan';
 
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const { TOKEN_SECRET, ACCESS_TOKEN_DURATION, REFRESH_TOKEN_DURATION } = process.env;
 const LOGS_PREFIX = "Toker-express: ";
 if (!TOKEN_SECRET)
@@ -47,28 +38,34 @@ const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600;
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400;
 function refresh(req, res, next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c;
-        const iss = ((_a = req.decodedAccessToken) === null || _a === void 0 ? void 0 : _a.iss) || ((_c = (_b = req.body) === null || _b === void 0 ? void 0 : _b.id) === null || _c === void 0 ? void 0 : _c.toString());
-        if (!isValidNumber(iss, 1, 999999999, false))
-            return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
-        log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
-        let accessToken;
-        let refreshToken;
-        try {
-            accessToken = sign(iss, accessDuration, "access", secrets);
-            refreshToken = sign(iss, refreshDuration, "refresh", secrets);
-        }
-        catch (err) {
-            return next(err);
-        }
-        log.debug(`refreshToken='${refreshToken}', accessToken='${accessToken}'`);
-        res.locals.accessToken = accessToken;
-        res.locals.refreshToken = refreshToken;
-        req.body.accessToken = accessToken;
-        req.body.refreshToken = refreshToken;
-        next();
-    });
+    var _a, _b, _c;
+    let iss = (_a = req.decodedAccessToken) === null || _a === void 0 ? void 0 : _a.iss;
+    const rbr = req.body.rows;
+    let rbrIsArray = false;
+    if (!iss) {
+        rbrIsArray = isArray(rbr, null, 1);
+        iss = rbrIsArray ? (_c = (_b = rbr[0]) === null || _b === void 0 ? void 0 : _b.id) === null || _c === void 0 ? void 0 : _c.toString() : null;
+    }
+    if (!isValidNumber(iss, 1, 999999999, false))
+        return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
+    let at;
+    let rt;
+    try {
+        at = sign(iss, accessDuration, "access", secrets);
+        rt = sign(iss, refreshDuration, "refresh", secrets);
+    }
+    catch (err) {
+        return next(err);
+    }
+    log.debug(`refreshToken='${rt}', accessToken='${at}'`);
+    res.locals.accessToken = at;
+    res.locals.refreshToken = rt;
+    if (rbrIsArray) {
+        rbr[0].accessToken = at;
+        rbr[0].refreshToken = rt;
+    }
+    next();
 }
 function decodeAccess(req, _res, next) {
     log.debug(`${LOGS_PREFIX}decode access token`);
@@ -84,38 +81,37 @@ function decodeAccess(req, _res, next) {
     log.debug(`${LOGS_PREFIX}accessToken : ${t}`);
     if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid access token` });
-    let decodedToken = null;
+    let dt = null;
     try {
-        decodedToken = verify(t, secrets, true);
+        dt = verify(t, secrets, true);
     }
     catch (e) {
         return next(e);
     }
-    if (!isValidNumber(decodedToken.iss, 1, 999999999, false))
+    if (!isValidNumber(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
-    log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(decodedToken)}`);
-    req.decodedAccessToken = decodedToken;
+    log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
+    req.decodedAccessToken = dt;
     next();
 }
 function decodeRefresh(req, _res, next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const token = req.body.refreshToken;
-        log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
-        if (!isJWT(token))
-            return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid refresh token` });
-        let decodedToken = null;
-        try {
-            decodedToken = verify(token, secrets, false);
-        }
-        catch (e) {
-            return next(e);
-        }
-        if (!isValidNumber(decodedToken.iss, 1, 999999999, false))
-            return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
-        log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(req.decodedRefreshToken)}`);
-        req.decodedRefreshToken = decodedToken;
-        next();
-    });
+    var _a;
+    const token = (_a = req.body) === null || _a === void 0 ? void 0 : _a.refreshToken;
+    log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
+    if (!isJWT(token))
+        return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid refresh token` });
+    let dt = null;
+    try {
+        dt = verify(token, secrets, false);
+    }
+    catch (e) {
+        return next(e);
+    }
+    if (!isValidNumber(dt.iss, 1, 999999999, false))
+        return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
+    req.decodedRefreshToken = dt;
+    next();
 }
 
 export { decodeAccess, decodeRefresh, refresh };

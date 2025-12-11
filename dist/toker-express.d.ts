@@ -37,9 +37,9 @@ declare global {
   }
 }
 
-declare function refresh(req: Request, res: Response, next: NextFunction): Promise<void>;
+declare function refresh(req: Request, res: Response, next: NextFunction): void;
 declare function decodeAccess(req: Request, _res: Response, next: NextFunction): void;
-declare function decodeRefresh(req: Request, _res: Response, next: NextFunction): Promise<void>;
+declare function decodeRefresh(req: Request, _res: Response, next: NextFunction): void;
 
 export { 
   refresh,

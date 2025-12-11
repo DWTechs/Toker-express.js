@@ -166,7 +166,7 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction): void {
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  */
 function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {
-  const token = req.body.refreshToken;
+  const token = req.body?.refreshToken;
   log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
 
   if (!isJWT(token)) 

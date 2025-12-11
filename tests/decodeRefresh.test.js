@@ -128,8 +128,12 @@ describe("decodeRefresh middleware", () => {
     it("should return 401 error when body is missing", async () => {
       req.body = undefined;
       
-      // This will throw an error when trying to access req.body.refreshToken
-      await expect(decodeRefresh(req, res, next)).rejects.toThrow();
+      await decodeRefresh(req, res, next);
+      
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 401,
+        message: "Toker-express: Invalid refresh token"
+      });
     });
 
   });
