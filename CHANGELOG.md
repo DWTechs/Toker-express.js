@@ -1,3 +1,7 @@
+# 0.2.1 (Dec 14th 2025)
+
+  - Fixed req.body.rows validation in refresh function
+
 # 0.2.0 (Dec 11th 2025)
 
   - New tokens from Refresh() function are now stored in res.locals and optionally added in req.body.rows[0] if rows is an array with at least one element

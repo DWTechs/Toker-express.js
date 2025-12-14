@@ -50,12 +50,12 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
 function refresh(req: Request, res: Response, next: NextFunction): void {
 
   let iss = req.decodedAccessToken?.iss;
-  const rbr = req.body.rows;
+  const rbr = req.body?.rows;
   let rbrIsArray = false;
 
   if (!iss) { // Determine if req.body.rows is an array with at least one element
-    rbrIsArray = isArray(rbr, null, 1);
-    iss = rbrIsArray ? rbr[0]?.id?.toString() : null;
+    rbrIsArray = isArray(rbr, ">=", 1);
+    iss = rbrIsArray ? (rbr[0]?.id ?? null) : null;
   }
 
   if (!isValidNumber(iss, 1, 999999999, false))

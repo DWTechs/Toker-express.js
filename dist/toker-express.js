@@ -38,13 +38,13 @@ const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600;
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400;
 function refresh(req, res, next) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     let iss = (_a = req.decodedAccessToken) === null || _a === void 0 ? void 0 : _a.iss;
-    const rbr = req.body.rows;
+    const rbr = (_b = req.body) === null || _b === void 0 ? void 0 : _b.rows;
     let rbrIsArray = false;
     if (!iss) {
-        rbrIsArray = isArray(rbr, null, 1);
-        iss = rbrIsArray ? (_c = (_b = rbr[0]) === null || _b === void 0 ? void 0 : _b.id) === null || _c === void 0 ? void 0 : _c.toString() : null;
+        rbrIsArray = isArray(rbr, ">=", 1);
+        iss = rbrIsArray ? ((_d = (_c = rbr[0]) === null || _c === void 0 ? void 0 : _c.id) !== null && _d !== void 0 ? _d : null) : null;
     }
     if (!isValidNumber(iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
