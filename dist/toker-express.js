@@ -25,7 +25,7 @@ https://github.com/DWTechs/Toker-express.js
 */
 
 import { sign, parseBearer, verify } from '@dwtechs/toker';
-import { isString, isNumber, isArray, isValidNumber, isJWT } from '@dwtechs/checkard';
+import { isString, isNumber, isValidNumber, isArray, isObject, isJWT } from '@dwtechs/checkard';
 import { log } from '@dwtechs/winstan';
 
 const { TOKEN_SECRET, ACCESS_TOKEN_DURATION, REFRESH_TOKEN_DURATION } = process.env;
@@ -38,14 +38,10 @@ const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600;
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400;
 function refresh(req, res, next) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     let iss = (_a = req.decodedAccessToken) === null || _a === void 0 ? void 0 : _a.iss;
-    const rbr = (_b = req.body) === null || _b === void 0 ? void 0 : _b.rows;
-    let rbrIsArray = false;
-    if (!iss) {
-        rbrIsArray = isArray(rbr, ">=", 1);
-        iss = rbrIsArray ? ((_d = (_c = rbr[0]) === null || _c === void 0 ? void 0 : _c.id) !== null && _d !== void 0 ? _d : null) : null;
-    }
+    if (!iss)
+        iss = (_b = res.locals.id) !== null && _b !== void 0 ? _b : null;
     if (!isValidNumber(iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
@@ -61,7 +57,8 @@ function refresh(req, res, next) {
     log.debug(`refreshToken='${rt}', accessToken='${at}'`);
     res.locals.accessToken = at;
     res.locals.refreshToken = rt;
-    if (rbrIsArray) {
+    const rbr = (_c = req.body) === null || _c === void 0 ? void 0 : _c.rows;
+    if (isArray(rbr, ">=", 1) && isObject(rbr[0])) {
         rbr[0].accessToken = at;
         rbr[0].refreshToken = rt;
     }

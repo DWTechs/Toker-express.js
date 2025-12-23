@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 
-// Extend Express Request interface globally
+export interface RowWithTokens {
+  accessToken?: string;
+  refreshToken?: string;
+  [key: string]: any;
+}
+
 declare global {
   namespace Express {
     interface Request {

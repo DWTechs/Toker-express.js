@@ -1,13 +1,20 @@
-// Extend Express Request interface
-declare global {
-  namespace Express {
-    interface Request {
-      isProtected?: boolean;
-      decodedAccessToken?: any;
-      decodedRefreshToken?: any;
-    }
-  }
+// export interface DecodedToken {
+//   iss: number;
+//   exp: number;
+//   nbf: number;
+//   [key: string]: any;
+// }
+
+export interface RowWithTokens {
+  accessToken?: string;
+  refreshToken?: string;
+  [key: string]: any;
 }
 
-// Export empty object to make this file a module
-export {};
+
+// export interface ResponseLocalsWithTokens {
+//   id?: number;
+//   accessToken?: string;
+//   refreshToken?: string;
+//   [key: string]: any;
+// }

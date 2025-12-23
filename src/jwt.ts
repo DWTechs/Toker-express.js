@@ -1,8 +1,16 @@
 import { sign, verify, parseBearer } from "@dwtechs/toker";
-import { isArray, isJWT, isNumber, isString, isValidNumber } from "@dwtechs/checkard";
+import { isArray, isJWT, isNumber, isObject, isString, isValidNumber } from "@dwtechs/checkard";
 import { log } from "@dwtechs/winstan";
 import type { Request, Response, NextFunction } from 'express';
-import './interfaces'; // Import to ensure global augmentation is applied
+import type { RowWithTokens } from './interfaces';
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    decodedAccessToken?: any;
+    decodedRefreshToken?: any;
+    isProtected?: boolean;
+  }
+}
 
 const { 
   TOKEN_SECRET, 
@@ -26,37 +34,45 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
 
 
 /**
- * Refreshes the JWT tokens for a user.
+ * Express middleware to generate new access and refresh JWT tokens for a user.
  *
- * This function generates new access and refresh tokens for a consumer based on the provided
- * decoded access token from req.decodedAccessToken or user ID from req.body.rows[0].id. It validates the issuer (iss) and
- * creates new tokens if the validation is successful. The new tokens are then added to the
- * response locals object and optionally to req.body.rows[0] if rows is an array with at least one element.
+ * This middleware creates new access and refresh tokens based on:
+ * 1. The issuer (iss) from `req.decodedAccessToken.iss` if available, OR
+ * 2. The user ID from `res.locals.id` if no decoded token is present
  *
- * @param {Request} req - The request object containing req.decodedAccessToken or req.body.rows[0].id.
- * @param {Response} res - The response object where the new tokens will be added in res.locals.
- * @param {NextFunction} next - The next middleware function in the Express.js request-response cycle.
+ * The generated tokens are stored in:
+ * - `res.locals.accessToken` and `res.locals.refreshToken`
+ * - `req.body.rows[0].accessToken` and `req.body.rows[0].refreshToken` (if rows array exists)
  *
- * @returns {void} Calls the next middleware function with an error if the issuer is invalid,
- *          otherwise proceeds to the next middleware function.
- * 
- * @throws {InvalidIssuerError} If the issuer (iss) is not a string or number (HTTP 400)
- * @throws {InvalidSecretsError} If the secrets array is empty or invalid (HTTP 500)
- * @throws {InvalidDurationError} If the duration is not a positive number (HTTP 400)
- * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
- * @throws {Object} Will call next() with error object containing:
- *   - statusCode: 400 - When iss (issuer) is missing or invalid
+ * @param {Request} req - The Express request object. May contain:
+ *   - `req.decodedAccessToken.iss`: User ID from decoded access token
+ *   - `req.body.rows`: Optional array where tokens will be added to first element
+ * @param {Response} res - The Express response object. Should contain:
+ *   - `res.locals.id`: User ID (used if decodedAccessToken is not available)
+ *   Tokens will be added to `res.locals.accessToken` and `res.locals.refreshToken`
+ * @param {NextFunction} next - Express next middleware function
+ *
+ * @returns {void}
+ *
+ * @throws Will call next() with error object containing:
+ *   - statusCode: 400 - When issuer (iss) is missing or invalid (not a number between 1-999999999)
+ *   - statusCode: 500 - When token signing fails (invalid secrets, duration, or base64 secret)
+ *
+ * @example
+ * // After successful authentication, call refresh to generate tokens
+ * app.post('/login', authenticate, refresh, (req, res) => {
+ *   res.json({ 
+ *     accessToken: res.locals.accessToken, 
+ *     refreshToken: res.locals.refreshToken 
+ *   });
+ * });
  */
 function refresh(req: Request, res: Response, next: NextFunction): void {
 
   let iss = req.decodedAccessToken?.iss;
-  const rbr = req.body?.rows;
-  let rbrIsArray = false;
 
-  if (!iss) { // Determine if req.body.rows is an array with at least one element
-    rbrIsArray = isArray(rbr, ">=", 1);
-    iss = rbrIsArray ? (rbr[0]?.id ?? null) : null;
-  }
+  if (!iss)
+    iss = res.locals.id ?? null;
 
   if (!isValidNumber(iss, 1, 999999999, false))
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
@@ -75,7 +91,8 @@ function refresh(req: Request, res: Response, next: NextFunction): void {
   res.locals.accessToken = at;
   res.locals.refreshToken = rt;
 
-  if (rbrIsArray) {
+  const rbr: RowWithTokens[] = req.body?.rows;
+  if (isArray(rbr, ">=", 1) && isObject(rbr[0])) {
     rbr[0].accessToken = at;
     rbr[0].refreshToken = rt;
   }

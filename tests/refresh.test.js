@@ -62,8 +62,9 @@ describe("refresh middleware", () => {
       expect(req.body.rows).toBeUndefined();
     });
 
-    it("should generate tokens when valid iss is provided in req.body.rows[0].id", async () => {
-      req.body.rows = [{ id: 54321 }];
+    it("should generate tokens when valid iss is provided in res.locals.id", async () => {
+      res.locals.id = 54321;
+      req.body.rows = [{ name: "Test User" }];
 
       await refresh(req, res, next);
 
@@ -76,22 +77,24 @@ describe("refresh middleware", () => {
       expect(typeof req.body.rows[0].refreshToken).toBe("string");
     });
 
-    it("should prioritize decodedAccessToken.iss over req.body.rows[0].id", async () => {
+    it("should prioritize decodedAccessToken.iss over res.locals.id", async () => {
       req.decodedAccessToken = { iss: 11111 };
-      req.body.rows = [{ id: 22222 }];
+      res.locals.id = 22222;
+      req.body.rows = [{ name: "Test" }];
 
       await refresh(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(res.locals).toHaveProperty("accessToken");
       expect(res.locals).toHaveProperty("refreshToken");
-      // Tokens should not be in rows when decodedAccessToken is used
-      expect(req.body.rows[0].accessToken).toBeUndefined();
-      expect(req.body.rows[0].refreshToken).toBeUndefined();
+      // Tokens should still be in rows when rows array exists
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
     });
 
-    it("should handle iss as string number in rows", async () => {
-      req.body.rows = [{ id: "98765" }];
+    it("should handle iss as string number in res.locals", async () => {
+      res.locals.id = "98765";
+      req.body.rows = [{ name: "Test" }];
 
       await refresh(req, res, next);
 
@@ -123,10 +126,11 @@ describe("refresh middleware", () => {
     });
 
     it("should handle rows array with multiple items (only first row gets tokens)", async () => {
+      res.locals.id = 11111;
       req.body.rows = [
-        { id: 11111 },
-        { id: 22222 },
-        { id: 33333 }
+        { name: "User 1" },
+        { name: "User 2" },
+        { name: "User 3" }
       ];
 
       await refresh(req, res, next);
@@ -304,8 +308,9 @@ describe("refresh middleware", () => {
 
   describe("Edge cases and data validation", () => {
 
-    it("should handle rows[0].id.toString() when id is number", async () => {
-      req.body.rows = [{ id: 12345 }];
+    it("should handle res.locals.id when id is number", async () => {
+      res.locals.id = 12345;
+      req.body.rows = [{ name: "Test" }];
 
       await refresh(req, res, next);
 
@@ -331,7 +336,8 @@ describe("refresh middleware", () => {
 
     it("should handle missing decodedAccessToken", async () => {
       req.decodedAccessToken = undefined;
-      req.body.rows = [{ id: 12345 }];
+      res.locals.id = 12345;
+      req.body.rows = [{ name: "Test" }];
 
       await refresh(req, res, next);
 
@@ -432,7 +438,8 @@ describe("refresh middleware", () => {
     });
 
     it("should generate tokens in both res.locals and req.body.rows[0] when using rows", async () => {
-      req.body.rows = [{ id: 12345, name: "Test User" }];
+      res.locals.id = 12345;
+      req.body.rows = [{ name: "Test User" }];
 
       await refresh(req, res, next);
 

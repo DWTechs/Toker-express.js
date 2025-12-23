@@ -1,3 +1,7 @@
+# 0.3.0 (Dec 23rd 2025)
+
+  - refresh() middleware now sources user ID from `res.locals.id` instead of `req.body.rows[0].id`
+
 # 0.2.1 (Dec 14th 2025)
 
   - Fixed req.body.rows validation in refresh function
