@@ -96,22 +96,56 @@ function refresh(req: Request, res: Response, next: NextFunction): void {
 
 
 /**
- * Express middleware function to decode and verify an access token from the Authorization header.
+ * Express middleware function to parse the bearer token from the Authorization header.
  * 
- * This middleware extracts the JWT access token from the Authorization header, validates its format,
- * verifies its signature, and attaches the decoded token to res.locals.decodedAccessToken for use by subsequent
- * middleware. It only processes requests that have `res.locals.isProtected` set to true.
+ * This middleware extracts the JWT token from the Authorization header (Bearer scheme)
+ * and stores it in res.locals.accessToken for use by subsequent middleware.
+ * It only processes requests that have `res.locals.isProtected` set to true.
  * 
  * @param {Request} req - The Express request object containing the Authorization header
  * @param {Response} res - The Express response object. Should contain:
  *   - `res.locals.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   Parsed token will be added to `res.locals.accessToken`
+ * @param {NextFunction} next - The next middleware function to be called
+ * 
+ * @returns {void} Calls the next middleware function with an error object if parsing fails.
+ *
+ * @throws {MissingAuthorizationError} If the Authorization header is missing (HTTP 401)
+ * @throws {InvalidBearerFormatError} If the Authorization header format is invalid (HTTP 401)
+ * 
+ */
+function parseBearerToken(req: Request, res: Response, next: NextFunction): void {
+  
+  if (!res.locals.isProtected) return next(); // if no jwt protection for this route
+  
+  log.debug(`${LOGS_PREFIX}parse bearer token`);
+  
+  try {
+    res.locals.accessToken = parseBearer(req.headers.authorization);
+  } catch (e: any) {
+    return next(e);
+  }
+
+  next();
+}
+
+
+/**
+ * Express middleware function to decode and verify an access token.
+ * 
+ * This middleware validates the JWT access token from res.locals.accessToken,
+ * verifies its signature, and attaches the decoded token to res.locals.decodedAccessToken 
+ * for use by subsequent middleware. It only processes requests that have `res.locals.isProtected` set to true.
+ * 
+ * @param {Request} req - The Express request object
+ * @param {Response} res - The Express response object. Should contain:
+ *   - `res.locals.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   - `res.locals.accessToken`: The JWT token to decode
  *   Decoded token will be added to `res.locals.decodedAccessToken`
  * @param {NextFunction} next - The next middleware function to be called
  * 
  * @returns {void} Calls the next middleware function with an error object if the token is invalid or iss is missing.
  *
- * @throws {MissingAuthorizationError} If the Authorization header is missing (HTTP 401)
- * @throws {InvalidBearerFormatError} If the Authorization header format is invalid (HTTP 401)
  * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
  * @throws {ExpiredTokenError} If the token has expired (exp claim) (HTTP 401)
  * @throws {InactiveTokenError} If the token cannot be used yet (nbf claim) (HTTP 401)
@@ -123,20 +157,13 @@ function refresh(req: Request, res: Response, next: NextFunction): void {
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  * 
  */
-function decodeAccess(req: Request, res: Response, next: NextFunction): void {
+function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
   
   log.debug(`${LOGS_PREFIX}decode access token`);
   
   if (!res.locals.isProtected) return next(); // if no jwt protection for this route
 
-  let t: string;
-  try {
-    t = parseBearer(req.headers.authorization);
-  } catch (e: any) {
-    return next(e);
-  }
-
-  log.debug(`${LOGS_PREFIX}accessToken : ${t}`);
+  const t = res.locals.accessToken;
 
   if (!isJWT(t)) 
     return next({statusCode: 401, message: `${LOGS_PREFIX}Invalid access token`});
@@ -200,6 +227,7 @@ function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
 
 export {
   refresh,
+  parseBearerToken,
   decodeAccess,
   decodeRefresh,
 };

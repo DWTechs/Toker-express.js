@@ -64,18 +64,23 @@ function refresh(req, res, next) {
     }
     next();
 }
-function decodeAccess(req, res, next) {
-    log.debug(`${LOGS_PREFIX}decode access token`);
+function parseBearerToken(req, res, next) {
     if (!res.locals.isProtected)
         return next();
-    let t;
+    log.debug(`${LOGS_PREFIX}parse bearer token`);
     try {
-        t = parseBearer(req.headers.authorization);
+        res.locals.accessToken = parseBearer(req.headers.authorization);
     }
     catch (e) {
         return next(e);
     }
-    log.debug(`${LOGS_PREFIX}accessToken : ${t}`);
+    next();
+}
+function decodeAccess(_req, res, next) {
+    log.debug(`${LOGS_PREFIX}decode access token`);
+    if (!res.locals.isProtected)
+        return next();
+    const t = res.locals.accessToken;
     if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid access token` });
     let dt = null;
@@ -111,4 +116,4 @@ function decodeRefresh(req, res, next) {
     next();
 }
 
-export { decodeAccess, decodeRefresh, refresh };
+export { decodeAccess, decodeRefresh, parseBearerToken, refresh };

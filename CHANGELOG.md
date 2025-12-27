@@ -1,4 +1,11 @@
-# 0.4.0 (Dec 27th 2025)
+# 0.5.0 (Dec 27th 2025)
+
+  - Split `decodeAccess()` into two separate middlewares for better flexibility:
+    - `parseBearerToken()` - Extracts the JWT token from the Authorization header (Bearer scheme)
+    - `decodeAccess()` - Validates and decodes the JWT token from `res.locals.accessToken`
+  - Both middlewares must now be used in sequence for complete access token processing: `parseBearerToken`, `decodeAccess`
+
+# 0.4.0 (Dec 26th 2025)
 
   - All decoded tokens and protection flags now stored in `res.locals` instead of `req` for better Express.js conventions
     - `decodeAccess()` now uses `res.locals.isProtected` instead of `req.isProtected`
