@@ -237,6 +237,27 @@ if (isArray(rbr, ">=", 1) && isObject(rbr[0])) {
 
 ### JWT Decoding
 
+#### Route Protection with isProtected
+
+The `decodeAccess()` middleware only processes requests when `res.locals.isProtected` is set to `true`. This allows you to selectively protect routes that require authentication.
+
+You should set this flag in a middleware before calling `decodeAccess()`:
+
+```Javascript
+// Example middleware to mark route as protected
+function protectRoute(req, res, next) {
+  res.locals.isProtected = true;
+  next();
+}
+
+// Usage
+router.get('/protected-route', protectRoute, tk.decodeAccess, yourHandler);
+```
+
+If `res.locals.isProtected` is `false`, `undefined`, or `null`, the `decodeAccess()` middleware will simply call `next()` without processing the token, allowing the request to continue to the next middleware.
+
+#### Access Token Decoding
+
 decodeAccess() functions will look for a bearer in authorization headers.
 
 ```Javascript
@@ -248,6 +269,8 @@ It will then send the decoded token in the res object.
 ```Javascript
 res.locals.decodedAccessToken = decodedToken;
 ```
+
+#### Refresh Token Decoding
 
 decodeRefresh() functions will look for a token in the client request body.
 
