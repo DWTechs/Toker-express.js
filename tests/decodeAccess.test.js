@@ -35,11 +35,13 @@ describe("decodeAccess middleware", () => {
 
   beforeEach(() => {
     req = {
-      isProtected: true,
-      headers: {},
-      decodedAccessToken: null
+      headers: {}
     };
-    res = {};
+    res = {
+      locals: {
+        isProtected: true
+      }
+    };
     next = jest.fn();
   });
 
@@ -49,34 +51,34 @@ describe("decodeAccess middleware", () => {
 
   describe("Route protection bypass", () => {
     
-    it("should bypass middleware when req.isProtected is false", () => {
-      req.isProtected = false;
+    it("should bypass middleware when res.locals.isProtected is false", () => {
+      res.locals.isProtected = false;
       
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
       expect(next).toHaveBeenCalledTimes(1);
-      expect(req.decodedAccessToken).toBeNull();
+      expect(res.locals.decodedAccessToken).toBeUndefined();
     });
 
-    it("should bypass middleware when req.isProtected is undefined", () => {
-      req.isProtected = undefined;
+    it("should bypass middleware when res.locals.isProtected is undefined", () => {
+      res.locals.isProtected = undefined;
       
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
       expect(next).toHaveBeenCalledTimes(1);
-      expect(req.decodedAccessToken).toBeNull();
+      expect(res.locals.decodedAccessToken).toBeUndefined();
     });
 
-    it("should bypass middleware when req.isProtected is null", () => {
-      req.isProtected = null;
+    it("should bypass middleware when res.locals.isProtected is null", () => {
+      res.locals.isProtected = null;
       
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
       expect(next).toHaveBeenCalledTimes(1);
-      expect(req.decodedAccessToken).toBeNull();
+      expect(res.locals.decodedAccessToken).toBeUndefined();
     });
 
   });
@@ -93,7 +95,7 @@ describe("decodeAccess middleware", () => {
           message: expect.stringContaining("Authorization header is missing")
         })
       );
-      expect(req.decodedAccessToken).toBeNull();
+      expect(res.locals.decodedAccessToken).toBeUndefined();
     });
 
     it("should call next with MissingAuthorizationError when authorization header is undefined", () => {
@@ -231,8 +233,8 @@ describe("decodeAccess middleware", () => {
       
       // Should succeed even though token is expired (ignoreExpiration=true)
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(12345);
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(12345);
     });
 
     it("should call next with InvalidSignatureError for token with invalid signature", async () => {
@@ -270,7 +272,7 @@ describe("decodeAccess middleware", () => {
       
       // This should actually succeed since we're using a valid iss
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken.iss).toBe("12345");
+      expect(res.locals.decodedAccessToken.iss).toBe("12345");
     });
 
     it("should return 400 error when iss is 0", async () => {
@@ -286,7 +288,7 @@ describe("decodeAccess middleware", () => {
       
       // Should succeed with minimum valid iss value
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken.iss).toBe(1);
+      expect(res.locals.decodedAccessToken.iss).toBe(1);
     });
 
     it("should return 400 error when iss exceeds maximum value", async () => {
@@ -317,7 +319,7 @@ describe("decodeAccess middleware", () => {
       
       // Should succeed with valid iss value
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken.iss).toBe(999);
+      expect(res.locals.decodedAccessToken.iss).toBe(999);
     });
 
   });
@@ -334,12 +336,12 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(12345);
-      expect(req.decodedAccessToken.typ).toBe("access");
-      expect(typeof req.decodedAccessToken.iat).toBe("number");
-      expect(typeof req.decodedAccessToken.exp).toBe("number");
-      expect(typeof req.decodedAccessToken.nbf).toBe("number");
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(12345);
+      expect(res.locals.decodedAccessToken.typ).toBe("access");
+      expect(typeof res.locals.decodedAccessToken.iat).toBe("number");
+      expect(typeof res.locals.decodedAccessToken.exp).toBe("number");
+      expect(typeof res.locals.decodedAccessToken.nbf).toBe("number");
     });
 
     it("should handle minimum valid iss value (1)", async () => {
@@ -352,8 +354,8 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(1);
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(1);
     });
 
     it("should handle maximum valid iss value (999999999)", async () => {
@@ -366,8 +368,8 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(999999999);
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(999999999);
     });
 
     it("should handle iss as string number", async () => {
@@ -380,8 +382,8 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe("54321");
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe("54321");
     });
 
     it("should handle refresh type token (even though it's for access)", async () => {
@@ -394,9 +396,9 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(12345);
-      expect(req.decodedAccessToken.typ).toBe("refresh");
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(12345);
+      expect(res.locals.decodedAccessToken.typ).toBe("refresh");
     });
 
   });
@@ -413,8 +415,8 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(12345);
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(12345);
     });
 
     it("should handle Bearer with exactly one space", async () => {
@@ -427,8 +429,8 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(12345);
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(12345);
     });
 
   });
@@ -445,8 +447,8 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toBeDefined();
-      expect(req.decodedAccessToken.iss).toBe(12345);
+      expect(res.locals.decodedAccessToken).toBeDefined();
+      expect(res.locals.decodedAccessToken.iss).toBe(12345);
     });
 
     it("should handle req without headers object", () => {
@@ -477,26 +479,24 @@ describe("decodeAccess middleware", () => {
       await new Promise(resolve => setTimeout(resolve, 1100));
       
       const req1 = { 
-        isProtected: true, 
-        headers: { authorization: `Bearer ${token1}` }, 
-        decodedAccessToken: null 
+        headers: { authorization: `Bearer ${token1}` }
       };
       const req2 = { 
-        isProtected: true, 
-        headers: { authorization: `Bearer ${token2}` }, 
-        decodedAccessToken: null 
+        headers: { authorization: `Bearer ${token2}` }
       };
       
+      const res1 = { locals: { isProtected: true } };
+      const res2 = { locals: { isProtected: true } };
       const next1 = jest.fn();
       const next2 = jest.fn();
       
-      decodeAccess(req1, res, next1);
-      decodeAccess(req2, res, next2);
+      decodeAccess(req1, res1, next1);
+      decodeAccess(req2, res2, next2);
       
       expect(next1).toHaveBeenCalledWith();
       expect(next2).toHaveBeenCalledWith();
-      expect(req1.decodedAccessToken.iss).toBe(11111);
-      expect(req2.decodedAccessToken.iss).toBe(22222);
+      expect(res1.locals.decodedAccessToken.iss).toBe(11111);
+      expect(res2.locals.decodedAccessToken.iss).toBe(22222);
     });
 
   });
@@ -513,18 +513,18 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(req.decodedAccessToken).toHaveProperty("iss");
-      expect(req.decodedAccessToken).toHaveProperty("iat");
-      expect(req.decodedAccessToken).toHaveProperty("exp");
-      expect(req.decodedAccessToken).toHaveProperty("nbf");
-      expect(req.decodedAccessToken).toHaveProperty("typ");
+      expect(res.locals.decodedAccessToken).toHaveProperty("iss");
+      expect(res.locals.decodedAccessToken).toHaveProperty("iat");
+      expect(res.locals.decodedAccessToken).toHaveProperty("exp");
+      expect(res.locals.decodedAccessToken).toHaveProperty("nbf");
+      expect(res.locals.decodedAccessToken).toHaveProperty("typ");
       
       // Verify claim types
-      expect(typeof req.decodedAccessToken.iss).toBe("number");
-      expect(typeof req.decodedAccessToken.iat).toBe("number");
-      expect(typeof req.decodedAccessToken.exp).toBe("number");
-      expect(typeof req.decodedAccessToken.nbf).toBe("number");
-      expect(typeof req.decodedAccessToken.typ).toBe("string");
+      expect(typeof res.locals.decodedAccessToken.iss).toBe("number");
+      expect(typeof res.locals.decodedAccessToken.iat).toBe("number");
+      expect(typeof res.locals.decodedAccessToken.exp).toBe("number");
+      expect(typeof res.locals.decodedAccessToken.nbf).toBe("number");
+      expect(typeof res.locals.decodedAccessToken.typ).toBe("string");
     });
 
     it("should verify token timestamps are logical", async () => {
@@ -537,7 +537,7 @@ describe("decodeAccess middleware", () => {
       decodeAccess(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      const decoded = req.decodedAccessToken;
+      const decoded = res.locals.decodedAccessToken;
       
       // exp should be after iat
       expect(decoded.exp).toBeGreaterThan(decoded.iat);

@@ -38,10 +38,10 @@ const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600;
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400;
 function refresh(req, res, next) {
-    var _a, _b, _c;
-    let iss = (_a = req.decodedAccessToken) === null || _a === void 0 ? void 0 : _a.iss;
+    var _a, _b, _c, _d;
+    let iss = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.decodedAccessToken) === null || _b === void 0 ? void 0 : _b.iss;
     if (!iss)
-        iss = (_b = res.locals.id) !== null && _b !== void 0 ? _b : null;
+        iss = (_c = res.locals.id) !== null && _c !== void 0 ? _c : null;
     if (!isValidNumber(iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
@@ -57,16 +57,16 @@ function refresh(req, res, next) {
     log.debug(`refreshToken='${rt}', accessToken='${at}'`);
     res.locals.accessToken = at;
     res.locals.refreshToken = rt;
-    const rbr = (_c = req.body) === null || _c === void 0 ? void 0 : _c.rows;
+    const rbr = (_d = req.body) === null || _d === void 0 ? void 0 : _d.rows;
     if (isArray(rbr, ">=", 1) && isObject(rbr[0])) {
         rbr[0].accessToken = at;
         rbr[0].refreshToken = rt;
     }
     next();
 }
-function decodeAccess(req, _res, next) {
+function decodeAccess(req, res, next) {
     log.debug(`${LOGS_PREFIX}decode access token`);
-    if (!req.isProtected)
+    if (!res.locals.isProtected)
         return next();
     let t;
     try {
@@ -88,10 +88,10 @@ function decodeAccess(req, _res, next) {
     if (!isValidNumber(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-    req.decodedAccessToken = dt;
+    res.locals.decodedAccessToken = dt;
     next();
 }
-function decodeRefresh(req, _res, next) {
+function decodeRefresh(req, res, next) {
     var _a;
     const token = (_a = req.body) === null || _a === void 0 ? void 0 : _a.refreshToken;
     log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
@@ -107,7 +107,7 @@ function decodeRefresh(req, _res, next) {
     if (!isValidNumber(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-    req.decodedRefreshToken = dt;
+    res.locals.decodedRefreshToken = dt;
     next();
 }
 

@@ -33,7 +33,6 @@ describe("refresh middleware", () => {
 
   beforeEach(() => {
     req = {
-      decodedAccessToken: null,
       body: {}
     };
     res = {
@@ -49,7 +48,7 @@ describe("refresh middleware", () => {
   describe("Valid issuer scenarios", () => {
     
     it("should generate tokens when valid iss is provided in decodedAccessToken", async () => {
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
 
       await refresh(req, res, next);
 
@@ -78,7 +77,7 @@ describe("refresh middleware", () => {
     });
 
     it("should prioritize decodedAccessToken.iss over res.locals.id", async () => {
-      req.decodedAccessToken = { iss: 11111 };
+      res.locals.decodedAccessToken = { iss: 11111 };
       res.locals.id = 22222;
       req.body.rows = [{ name: "Test" }];
 
@@ -106,7 +105,7 @@ describe("refresh middleware", () => {
     });
 
     it("should handle minimum valid iss value (1)", async () => {
-      req.decodedAccessToken = { iss: 1 };
+      res.locals.decodedAccessToken = { iss: 1 };
 
       await refresh(req, res, next);
 
@@ -116,7 +115,7 @@ describe("refresh middleware", () => {
     });
 
     it("should handle maximum valid iss value (999999999)", async () => {
-      req.decodedAccessToken = { iss: 999999999 };
+      res.locals.decodedAccessToken = { iss: 999999999 };
 
       await refresh(req, res, next);
 
@@ -199,7 +198,7 @@ describe("refresh middleware", () => {
     });
 
     it("should return error when iss is 0", async () => {
-      req.decodedAccessToken = { iss: 0 };
+      res.locals.decodedAccessToken = { iss: 0 };
 
       await refresh(req, res, next);
 
@@ -212,7 +211,7 @@ describe("refresh middleware", () => {
     });
 
     it("should return error when iss is negative", async () => {
-      req.decodedAccessToken = { iss: -1 };
+      res.locals.decodedAccessToken = { iss: -1 };
 
       await refresh(req, res, next);
 
@@ -225,7 +224,7 @@ describe("refresh middleware", () => {
     });
 
     it("should return error when iss exceeds maximum value", async () => {
-      req.decodedAccessToken = { iss: 1000000000 }; // Over 999999999
+      res.locals.decodedAccessToken = { iss: 1000000000 }; // Over 999999999
 
       await refresh(req, res, next);
 
@@ -238,7 +237,7 @@ describe("refresh middleware", () => {
     });
 
     it("should return error when iss is not a number", async () => {
-      req.decodedAccessToken = { iss: "invalid" };
+      res.locals.decodedAccessToken = { iss: "invalid" };
 
       await refresh(req, res, next);
 
@@ -251,7 +250,7 @@ describe("refresh middleware", () => {
     });
 
     it("should return error when iss is null", async () => {
-      req.decodedAccessToken = { iss: null };
+      res.locals.decodedAccessToken = { iss: null };
 
       await refresh(req, res, next);
 
@@ -264,7 +263,7 @@ describe("refresh middleware", () => {
     });
 
     it("should return error when iss is undefined", async () => {
-      req.decodedAccessToken = { iss: undefined };
+      res.locals.decodedAccessToken = { iss: undefined };
 
       await refresh(req, res, next);
 
@@ -294,7 +293,7 @@ describe("refresh middleware", () => {
   describe("Token generation error scenarios", () => {
 
     it("should handle token generation with successful flow", async () => {
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
 
       await refresh(req, res, next);
 
@@ -335,7 +334,7 @@ describe("refresh middleware", () => {
     });
 
     it("should handle missing decodedAccessToken", async () => {
-      req.decodedAccessToken = undefined;
+      res.locals.decodedAccessToken = undefined;
       res.locals.id = 12345;
       req.body.rows = [{ name: "Test" }];
 
@@ -392,7 +391,7 @@ describe("refresh middleware", () => {
   describe("Token validation", () => {
 
     it("should generate valid JWT tokens", async () => {
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
 
       await refresh(req, res, next);
 
@@ -416,7 +415,7 @@ describe("refresh middleware", () => {
     });
 
     it("should generate different tokens on multiple calls", async () => {
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
 
       // First call
       await refresh(req, res, next);
@@ -466,7 +465,7 @@ describe("refresh middleware", () => {
   describe("Environment variables handling", () => {
 
     it("should use default durations when environment variables are not numbers", async () => {
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
       
       const originalAccess = process.env.ACCESS_TOKEN_DURATION;
       const originalRefresh = process.env.REFRESH_TOKEN_DURATION;
@@ -486,7 +485,7 @@ describe("refresh middleware", () => {
     });
 
     it("should use default durations when environment variables are missing", async () => {
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
       
       const originalAccess = process.env.ACCESS_TOKEN_DURATION;
       const originalRefresh = process.env.REFRESH_TOKEN_DURATION;
@@ -511,7 +510,7 @@ describe("refresh middleware", () => {
 
     it("should log debug messages during token creation", async () => {
       const { log } = require("@dwtechs/winstan");
-      req.decodedAccessToken = { iss: 12345 };
+      res.locals.decodedAccessToken = { iss: 12345 };
 
       await refresh(req, res, next);
 

@@ -1,3 +1,11 @@
+# 0.4.0 (Dec 27th 2025)
+
+  - All decoded tokens and protection flags now stored in `res.locals` instead of `req` for better Express.js conventions
+    - `decodeAccess()` now uses `res.locals.isProtected` instead of `req.isProtected`
+    - `decodeAccess()` now stores decoded token in `res.locals.decodedAccessToken` instead of `req.decodedAccessToken`
+    - `decodeRefresh()` now stores decoded token in `res.locals.decodedRefreshToken` instead of `req.decodedRefreshToken`
+    - `refresh()` now reads from `res.locals.decodedAccessToken` instead of `req.decodedAccessToken`
+
 # 0.3.0 (Dec 23rd 2025)
 
   - refresh() middleware now sources user ID from `res.locals.id` instead of `req.body.rows[0].id`

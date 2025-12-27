@@ -4,14 +4,6 @@ import { log } from "@dwtechs/winstan";
 import type { Request, Response, NextFunction } from 'express';
 import type { RowWithTokens } from './interfaces';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    decodedAccessToken?: any;
-    decodedRefreshToken?: any;
-    isProtected?: boolean;
-  }
-}
-
 const { 
   TOKEN_SECRET, 
   ACCESS_TOKEN_DURATION,
@@ -37,7 +29,7 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  * Express middleware to generate new access and refresh JWT tokens for a user.
  *
  * This middleware creates new access and refresh tokens based on:
- * 1. The issuer (iss) from `req.decodedAccessToken.iss` if available, OR
+ * 1. The issuer (iss) from `res.locals.decodedAccessToken.iss` if available, OR
  * 2. The user ID from `res.locals.id` if no decoded token is present
  *
  * The generated tokens are stored in:
@@ -45,9 +37,9 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  * - `req.body.rows[0].accessToken` and `req.body.rows[0].refreshToken` (if rows array exists)
  *
  * @param {Request} req - The Express request object. May contain:
- *   - `req.decodedAccessToken.iss`: User ID from decoded access token
  *   - `req.body.rows`: Optional array where tokens will be added to first element
  * @param {Response} res - The Express response object. Should contain:
+ *   - `res.locals.decodedAccessToken.iss`: User ID from decoded access token (checked first), OR
  *   - `res.locals.id`: User ID (used if decodedAccessToken is not available)
  *   Tokens will be added to `res.locals.accessToken` and `res.locals.refreshToken`
  * @param {NextFunction} next - Express next middleware function
@@ -69,7 +61,7 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  */
 function refresh(req: Request, res: Response, next: NextFunction): void {
 
-  let iss = req.decodedAccessToken?.iss;
+  let iss = res.locals?.decodedAccessToken?.iss;
 
   if (!iss)
     iss = res.locals.id ?? null;
@@ -107,11 +99,13 @@ function refresh(req: Request, res: Response, next: NextFunction): void {
  * Express middleware function to decode and verify an access token from the Authorization header.
  * 
  * This middleware extracts the JWT access token from the Authorization header, validates its format,
- * verifies its signature, and attaches the decoded token to req.decodedAccessToken for use by subsequent
- * middleware. It only processes requests that have `req.isProtected` set to true.
+ * verifies its signature, and attaches the decoded token to res.locals.decodedAccessToken for use by subsequent
+ * middleware. It only processes requests that have `res.locals.isProtected` set to true.
  * 
  * @param {Request} req - The Express request object containing the Authorization header
- * @param {Response} _res - The Express response object (not used in this function)
+ * @param {Response} res - The Express response object. Should contain:
+ *   - `res.locals.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   Decoded token will be added to `res.locals.decodedAccessToken`
  * @param {NextFunction} next - The next middleware function to be called
  * 
  * @returns {void} Calls the next middleware function with an error object if the token is invalid or iss is missing.
@@ -129,11 +123,11 @@ function refresh(req: Request, res: Response, next: NextFunction): void {
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  * 
  */
-function decodeAccess(req: Request, _res: Response, next: NextFunction): void {
+function decodeAccess(req: Request, res: Response, next: NextFunction): void {
   
   log.debug(`${LOGS_PREFIX}decode access token`);
   
-  if (!req.isProtected) return next(); // if no jwt protection for this route
+  if (!res.locals.isProtected) return next(); // if no jwt protection for this route
 
   let t: string;
   try {
@@ -158,7 +152,7 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction): void {
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
 
   log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-  req.decodedAccessToken = dt;
+  res.locals.decodedAccessToken = dt;
   next();
 }
 
@@ -166,8 +160,8 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction): void {
 /**
  * Middleware function to decode and verify a refresh token from the request body.
  * 
- * @param {Request} req - The request object containing the refresh token in the body.
- * @param {Response} _res - The response object (not used in this function).
+ * @param {Request} req - The request object containing the refresh token in `req.body.refreshToken`
+ * @param {Response} res - The response object. Decoded token will be added to `res.locals.decodedRefreshToken`
  * @param {NextFunction} next - The next middleware function to be called.
  * 
  * @returns {void} Calls the next middleware function with an error object if the token is invalid or iss is missing.
@@ -182,7 +176,7 @@ function decodeAccess(req: Request, _res: Response, next: NextFunction): void {
  *   - statusCode: 401 - When refresh token is not a valid JWT format
  *   - statusCode: 400 - When decoded token is missing required 'iss' claim
  */
-function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {
+function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
   const token = req.body?.refreshToken;
   log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
 
@@ -200,7 +194,7 @@ function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
 
   log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-  req.decodedRefreshToken = dt;
+  res.locals.decodedRefreshToken = dt;
   next();
 }
 
