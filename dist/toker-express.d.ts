@@ -26,12 +26,6 @@ https://github.com/DWTechs/Toker-express.js
 
 import type { Request, Response, NextFunction } from 'express';
 
-export interface RowWithTokens {
-  accessToken?: string;
-  refreshToken?: string;
-  [key: string]: any;
-}
-
 declare function refresh(req: Request, res: Response, next: NextFunction): void;
 declare function parseBearerToken(req: Request, res: Response, next: NextFunction): void;
 declare function decodeAccess(_req: Request, res: Response, next: NextFunction): void;

@@ -57,8 +57,11 @@ describe("refresh middleware", () => {
       expect(res.locals).toHaveProperty("refreshToken");
       expect(typeof res.locals.accessToken).toBe("string");
       expect(typeof res.locals.refreshToken).toBe("string");
-      // Tokens should not be in req.body.rows when using decodedAccessToken
-      expect(req.body.rows).toBeUndefined();
+      // req.body.rows is now automatically created
+      expect(req.body.rows).toBeDefined();
+      expect(Array.isArray(req.body.rows)).toBe(true);
+      expect(req.body.rows[0]).toHaveProperty("accessToken");
+      expect(req.body.rows[0]).toHaveProperty("refreshToken");
     });
 
     it("should generate tokens when valid iss is provided in res.locals.id", async () => {

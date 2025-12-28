@@ -1,15 +1,19 @@
-# 0.5.1 (Dec 28th 2025)
+# 0.5.2 (Dec 28th 2025)
+
+  - `refresh()` middleware now automatically creates `req.body.rows` array if it doesn't exist
+
+# 0.5.1 (Dec 27th 2025)
 
   - Fix declarations file 
 
-# 0.5.0 (Dec 27th 2025)
+# 0.5.0 (Dec 26th 2025)
 
   - Split `decodeAccess()` into two separate middlewares for better flexibility:
     - `parseBearerToken()` - Extracts the JWT token from the Authorization header (Bearer scheme)
     - `decodeAccess()` - Validates and decodes the JWT token from `res.locals.accessToken`
   - Both middlewares must now be used in sequence for complete access token processing: `parseBearerToken`, `decodeAccess`
 
-# 0.4.0 (Dec 26th 2025)
+# 0.4.0 (Dec 25th 2025)
 
   - All decoded tokens and protection flags now stored in `res.locals` instead of `req` for better Express.js conventions
     - `decodeAccess()` now uses `res.locals.isProtected` instead of `req.isProtected`

@@ -57,11 +57,12 @@ function refresh(req, res, next) {
     log.debug(`refreshToken='${rt}', accessToken='${at}'`);
     res.locals.accessToken = at;
     res.locals.refreshToken = rt;
-    const rbr = (_d = req.body) === null || _d === void 0 ? void 0 : _d.rows;
-    if (isArray(rbr, ">=", 1) && isObject(rbr[0])) {
-        rbr[0].accessToken = at;
-        rbr[0].refreshToken = rt;
-    }
+    if (!isArray((_d = req.body) === null || _d === void 0 ? void 0 : _d.rows, ">=", 1))
+        req.body.rows = [{}];
+    else if (!isObject(req.body.rows[0]))
+        req.body.rows[0] = {};
+    req.body.rows[0].accessToken = at;
+    req.body.rows[0].refreshToken = rt;
     next();
 }
 function parseBearerToken(req, res, next) {

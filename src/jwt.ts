@@ -2,7 +2,6 @@ import { sign, verify, parseBearer } from "@dwtechs/toker";
 import { isArray, isJWT, isNumber, isObject, isString, isValidNumber } from "@dwtechs/checkard";
 import { log } from "@dwtechs/winstan";
 import type { Request, Response, NextFunction } from 'express';
-import type { RowWithTokens } from './interfaces';
 
 const { 
   TOKEN_SECRET, 
@@ -83,11 +82,13 @@ function refresh(req: Request, res: Response, next: NextFunction): void {
   res.locals.accessToken = at;
   res.locals.refreshToken = rt;
 
-  const rbr: RowWithTokens[] = req.body?.rows;
-  if (isArray(rbr, ">=", 1) && isObject(rbr[0])) {
-    rbr[0].accessToken = at;
-    rbr[0].refreshToken = rt;
-  }
+  if (!isArray(req.body?.rows, ">=", 1))
+    req.body.rows = [{}];
+  else if (!isObject(req.body.rows[0]))
+    req.body.rows[0] = {};
+  
+  req.body.rows[0].accessToken = at;
+  req.body.rows[0].refreshToken = rt;
   
   next();
 
