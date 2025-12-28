@@ -1,3 +1,7 @@
+# 0.5.1 (Dec 28th 2025)
+
+  - Fix declarations file 
+
 # 0.5.0 (Dec 27th 2025)
 
   - Split `decodeAccess()` into two separate middlewares for better flexibility:
