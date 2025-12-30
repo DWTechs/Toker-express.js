@@ -77,6 +77,7 @@ describe("refresh middleware", () => {
       expect(req.body.rows[0]).toHaveProperty("refreshToken");
       expect(typeof req.body.rows[0].accessToken).toBe("string");
       expect(typeof req.body.rows[0].refreshToken).toBe("string");
+      expect(req.body.rows[0].name).toBe("Test User"); // Original data preserved
     });
 
     it("should prioritize decodedAccessToken.iss over res.locals.id", async () => {
@@ -92,6 +93,7 @@ describe("refresh middleware", () => {
       // Tokens should still be in rows when rows array exists
       expect(req.body.rows[0]).toHaveProperty("accessToken");
       expect(req.body.rows[0]).toHaveProperty("refreshToken");
+      expect(req.body.rows[0].name).toBe("Test"); // Original data preserved
     });
 
     it("should handle iss as string number in res.locals", async () => {
@@ -105,6 +107,7 @@ describe("refresh middleware", () => {
       expect(res.locals).toHaveProperty("refreshToken");
       expect(req.body.rows[0]).toHaveProperty("accessToken");
       expect(req.body.rows[0]).toHaveProperty("refreshToken");
+      expect(req.body.rows[0].name).toBe("Test"); // Original data preserved
     });
 
     it("should handle minimum valid iss value (1)", async () => {
@@ -348,6 +351,7 @@ describe("refresh middleware", () => {
       expect(res.locals).toHaveProperty("refreshToken");
       expect(req.body.rows[0]).toHaveProperty("accessToken");
       expect(req.body.rows[0]).toHaveProperty("refreshToken");
+      expect(req.body.rows[0].name).toBe("Test"); // Original data preserved
     });
 
     it("should handle rows[0].id as boolean false (falsy)", async () => {
@@ -361,6 +365,7 @@ describe("refresh middleware", () => {
       });
       expect(res.locals.accessToken).toBeUndefined();
       expect(res.locals.refreshToken).toBeUndefined();
+      expect(req.body.rows[0].id).toBe(false); // Original data preserved
     });
 
     it("should handle rows[0].id as empty string", async () => {
@@ -374,6 +379,7 @@ describe("refresh middleware", () => {
       });
       expect(res.locals.accessToken).toBeUndefined();
       expect(res.locals.refreshToken).toBeUndefined();
+      expect(req.body.rows[0].id).toBe(""); // Original data preserved
     });
 
     it("should handle rows[0] being null", async () => {
