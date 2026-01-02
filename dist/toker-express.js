@@ -24,8 +24,8 @@ SOFTWARE.
 https://github.com/DWTechs/Toker-express.js
 */
 
-import { sign, parseBearer, verify } from '@dwtechs/toker';
-import { isString, isNumber, isValidNumber, isArray, isObject, isJWT } from '@dwtechs/checkard';
+import { sign, parseBearer as parseBearer$1, verify } from '@dwtechs/toker';
+import { isString, isNumber, isValidInteger, isJWT } from '@dwtechs/checkard';
 import { log } from '@dwtechs/winstan';
 
 const { TOKEN_SECRET, ACCESS_TOKEN_DURATION, REFRESH_TOKEN_DURATION } = process.env;
@@ -37,12 +37,10 @@ if (!isString(TOKEN_SECRET, "!0"))
 const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600;
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400;
-function refresh(req, res, next) {
-    var _a, _b, _c, _d;
-    let iss = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.decodedAccessToken) === null || _b === void 0 ? void 0 : _b.iss;
-    if (!iss)
-        iss = (_c = res.locals.id) !== null && _c !== void 0 ? _c : null;
-    if (!isValidNumber(iss, 1, 999999999, false))
+function createTokens(req, res, next) {
+    var _a, _b;
+    const iss = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.id;
+    if (!isValidInteger(iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
     let at;
@@ -55,22 +53,36 @@ function refresh(req, res, next) {
         return next(err);
     }
     log.debug(`refreshToken='${rt}', accessToken='${at}'`);
-    res.locals.accessToken = at;
-    res.locals.refreshToken = rt;
-    if (!isArray((_d = req.body) === null || _d === void 0 ? void 0 : _d.rows, ">=", 1))
-        req.body.rows = [{}];
-    else if (!isObject(req.body.rows[0]))
-        req.body.rows[0] = {};
     req.body.rows[0].accessToken = at;
     req.body.rows[0].refreshToken = rt;
     next();
 }
-function parseBearerToken(req, res, next) {
-    if (!res.locals.isProtected)
-        return next();
-    log.debug(`${LOGS_PREFIX}parse bearer token`);
+function refreshTokens(req, res, next) {
+    var _a, _b, _c;
+    let iss = (_c = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.tokens) === null || _b === void 0 ? void 0 : _b.decodedAccess) === null || _c === void 0 ? void 0 : _c.iss;
+    if (!isValidInteger(iss, 1, 999999999, false))
+        return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
+    let at;
+    let rt;
     try {
-        res.locals.accessToken = parseBearer(req.headers.authorization);
+        at = sign(iss, accessDuration, "access", secrets);
+        rt = sign(iss, refreshDuration, "refresh", secrets);
+    }
+    catch (err) {
+        return next(err);
+    }
+    log.debug(`refreshToken='${rt}', accessToken='${at}'`);
+    req.body.rows[0].accessToken = at;
+    req.body.rows[0].refreshToken = rt;
+    next();
+}
+function parseBearer(req, res, next) {
+    if (!res.locals.route.isProtected)
+        return next();
+    log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
+    try {
+        res.locals.tokens.access = parseBearer$1(req.headers.authorization);
     }
     catch (e) {
         return next(e);
@@ -79,9 +91,9 @@ function parseBearerToken(req, res, next) {
 }
 function decodeAccess(_req, res, next) {
     log.debug(`${LOGS_PREFIX}decode access token`);
-    if (!res.locals.isProtected)
+    if (!res.locals.route.isProtected)
         return next();
-    const t = res.locals.accessToken;
+    const t = res.locals.tokens.access;
     if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid access token` });
     let dt = null;
@@ -91,30 +103,30 @@ function decodeAccess(_req, res, next) {
     catch (e) {
         return next(e);
     }
-    if (!isValidNumber(dt.iss, 1, 999999999, false))
+    if (!isValidInteger(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-    res.locals.decodedAccessToken = dt;
+    res.locals.tokens.decodedAccess = dt;
     next();
 }
 function decodeRefresh(req, res, next) {
     var _a;
-    const token = (_a = req.body) === null || _a === void 0 ? void 0 : _a.refreshToken;
-    log.debug(`${LOGS_PREFIX}decodeRefresh(token=${token})`);
-    if (!isJWT(token))
+    const t = (_a = req.body) === null || _a === void 0 ? void 0 : _a.refreshToken;
+    log.debug(`${LOGS_PREFIX}decodeRefresh(token=${t})`);
+    if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid refresh token` });
     let dt = null;
     try {
-        dt = verify(token, secrets, false);
+        dt = verify(t, secrets, false);
     }
     catch (e) {
         return next(e);
     }
-    if (!isValidNumber(dt.iss, 1, 999999999, false))
+    if (!isValidInteger(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-    res.locals.decodedRefreshToken = dt;
+    res.locals.tokens.decodedRefresh = dt;
     next();
 }
 
-export { decodeAccess, decodeRefresh, parseBearerToken, refresh };
+export { createTokens, decodeAccess, decodeRefresh, parseBearer, refreshTokens };

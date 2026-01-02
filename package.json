@@ -1,6 +1,6 @@
 {
   "name": "@dwtechs/toker-express",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Open source JWT management library for Express.js to refresh and decode tokens safely.",
   "keywords": [
     "JWT",

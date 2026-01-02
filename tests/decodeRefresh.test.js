@@ -38,7 +38,10 @@ describe("decodeRefresh middleware", () => {
       body: {}
     };
     res = {
-      locals: {}
+      locals: {
+        route: {},
+        tokens: {}
+      }
     };
     next = jest.fn();
   });
@@ -164,8 +167,8 @@ describe("decodeRefresh middleware", () => {
       
       // Should succeed as token is still valid
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
     });
 
     it("should call next with InvalidSignatureError for token with invalid signature", async () => {
@@ -201,7 +204,7 @@ describe("decodeRefresh middleware", () => {
       
       // This should succeed as the token is now active
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
     });
 
   });
@@ -218,7 +221,7 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken.iss).toBe("12345");
+      expect(res.locals.tokens.decodedRefresh.iss).toBe("12345");
     });
 
     it("should return 400 error when iss is 0", async () => {
@@ -280,12 +283,12 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
-      expect(res.locals.decodedRefreshToken.typ).toBe("refresh");
-      expect(typeof res.locals.decodedRefreshToken.iat).toBe("number");
-      expect(typeof res.locals.decodedRefreshToken.exp).toBe("number");
-      expect(typeof res.locals.decodedRefreshToken.nbf).toBe("number");
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh.typ).toBe("refresh");
+      expect(typeof res.locals.tokens.decodedRefresh.iat).toBe("number");
+      expect(typeof res.locals.tokens.decodedRefresh.exp).toBe("number");
+      expect(typeof res.locals.tokens.decodedRefresh.nbf).toBe("number");
     });
 
     it("should handle minimum valid iss value (1)", async () => {
@@ -297,8 +300,8 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(1);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(1);
     });
 
     it("should handle maximum valid iss value (999999999)", async () => {
@@ -310,8 +313,8 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(999999999);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(999999999);
     });
 
     it("should handle iss as string number", async () => {
@@ -323,8 +326,8 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe("54321");
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe("54321");
     });
 
     it("should successfully decode expired token during its valid period", async () => {
@@ -339,8 +342,8 @@ describe("decodeRefresh middleware", () => {
       
       // Should succeed because token is still valid
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
     });
 
     it("should handle access type token (even though it's for refresh)", async () => {
@@ -352,9 +355,9 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
-      expect(res.locals.decodedRefreshToken.typ).toBe("access");
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh.typ).toBe("access");
     });
 
   });
@@ -370,8 +373,8 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
     });
 
     it("should not modify res object", async () => {
@@ -397,8 +400,8 @@ describe("decodeRefresh middleware", () => {
         body: { refreshToken: token2 }
       };
       
-      const res1 = { locals: {} };
-      const res2 = { locals: {} };
+      const res1 = { locals: { tokens: {} } };
+      const res2 = { locals: { tokens: {} } };
       const next1 = jest.fn();
       const next2 = jest.fn();
       
@@ -410,8 +413,8 @@ describe("decodeRefresh middleware", () => {
       
       expect(next1).toHaveBeenCalledWith();
       expect(next2).toHaveBeenCalledWith();
-      expect(res1.locals.decodedRefreshToken.iss).toBe(11111);
-      expect(res2.locals.decodedRefreshToken.iss).toBe(22222);
+      expect(res1.locals.tokens.decodedRefresh.iss).toBe(11111);
+      expect(res2.locals.tokens.decodedRefresh.iss).toBe(22222);
     });
 
     it("should handle req.body with additional properties", async () => {
@@ -427,8 +430,8 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
     });
 
   });
@@ -444,18 +447,18 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toHaveProperty("iss");
-      expect(res.locals.decodedRefreshToken).toHaveProperty("iat");
-      expect(res.locals.decodedRefreshToken).toHaveProperty("exp");
-      expect(res.locals.decodedRefreshToken).toHaveProperty("nbf");
-      expect(res.locals.decodedRefreshToken).toHaveProperty("typ");
+      expect(res.locals.tokens.decodedRefresh).toHaveProperty("iss");
+      expect(res.locals.tokens.decodedRefresh).toHaveProperty("iat");
+      expect(res.locals.tokens.decodedRefresh).toHaveProperty("exp");
+      expect(res.locals.tokens.decodedRefresh).toHaveProperty("nbf");
+      expect(res.locals.tokens.decodedRefresh).toHaveProperty("typ");
       
       // Verify claim types
-      expect(typeof res.locals.decodedRefreshToken.iss).toBe("number");
-      expect(typeof res.locals.decodedRefreshToken.iat).toBe("number");
-      expect(typeof res.locals.decodedRefreshToken.exp).toBe("number");
-      expect(typeof res.locals.decodedRefreshToken.nbf).toBe("number");
-      expect(typeof res.locals.decodedRefreshToken.typ).toBe("string");
+      expect(typeof res.locals.tokens.decodedRefresh.iss).toBe("number");
+      expect(typeof res.locals.tokens.decodedRefresh.iat).toBe("number");
+      expect(typeof res.locals.tokens.decodedRefresh.exp).toBe("number");
+      expect(typeof res.locals.tokens.decodedRefresh.nbf).toBe("number");
+      expect(typeof res.locals.tokens.decodedRefresh.typ).toBe("string");
     });
 
     it("should verify token timestamps are logical", async () => {
@@ -467,7 +470,7 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      const decoded = res.locals.decodedRefreshToken;
+      const decoded = res.locals.tokens.decodedRefresh;
       
       // exp should be after iat
       expect(decoded.exp).toBeGreaterThan(decoded.iat);
@@ -493,8 +496,8 @@ describe("decodeRefresh middleware", () => {
       
       // Should succeed
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
     });
 
     it("should read token from req.body.refreshToken instead of Authorization header", async () => {
@@ -508,14 +511,14 @@ describe("decodeRefresh middleware", () => {
       await decodeRefresh(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
-      expect(res.locals.decodedRefreshToken.iss).toBe(12345);
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
     });
 
-    it("should not have res.locals.isProtected bypass logic", async () => {
+    it("should not have res.locals.route.isProtected bypass logic", async () => {
       const validToken = sign(12345, 3600, "refresh", secrets);
       req.body.refreshToken = validToken;
-      res.locals.isProtected = false; // This should be ignored
+      res.locals.route.isProtected = false; // This should be ignored
       
       await new Promise(resolve => setTimeout(resolve, 1100));
       
@@ -523,7 +526,7 @@ describe("decodeRefresh middleware", () => {
       
       // Should process regardless of isProtected
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.decodedRefreshToken).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
     });
 
   });

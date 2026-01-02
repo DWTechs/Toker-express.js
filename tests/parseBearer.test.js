@@ -4,7 +4,7 @@ process.env.ACCESS_TOKEN_DURATION = "600";
 process.env.REFRESH_TOKEN_DURATION = "86400";
 
 // Use require() instead of import to ensure env vars are set first
-const { parseBearerToken } = require("../dist/toker-express.js");
+const { parseBearer } = require("../dist/toker-express.js");
 
 // Mock the log module
 jest.mock("@dwtechs/winstan", () => ({
@@ -28,7 +28,7 @@ afterAll(() => {
   process.env = originalEnv;
 });
 
-describe("parseBearerToken middleware", () => {
+describe("parseBearer middleware", () => {
   let req, res, next;
 
   beforeEach(() => {
@@ -37,7 +37,10 @@ describe("parseBearerToken middleware", () => {
     };
     res = {
       locals: {
-        isProtected: true
+        route: {
+          isProtected: true
+        },
+        tokens: {}
       }
     };
     next = jest.fn();
@@ -49,34 +52,34 @@ describe("parseBearerToken middleware", () => {
 
   describe("Route protection bypass", () => {
     
-    it("should bypass middleware when res.locals.isProtected is false", () => {
-      res.locals.isProtected = false;
+    it("should bypass middleware when res.locals.route.isProtected is false", () => {
+      res.locals.route.isProtected = false;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
       expect(next).toHaveBeenCalledTimes(1);
-      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.tokens.access).toBeUndefined();
     });
 
-    it("should bypass middleware when res.locals.isProtected is undefined", () => {
-      res.locals.isProtected = undefined;
+    it("should bypass middleware when res.locals.route.isProtected is undefined", () => {
+      res.locals.route.isProtected = undefined;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
       expect(next).toHaveBeenCalledTimes(1);
-      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.tokens.access).toBeUndefined();
     });
 
-    it("should bypass middleware when res.locals.isProtected is null", () => {
-      res.locals.isProtected = null;
+    it("should bypass middleware when res.locals.route.isProtected is null", () => {
+      res.locals.route.isProtected = null;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
       expect(next).toHaveBeenCalledTimes(1);
-      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.tokens.access).toBeUndefined();
     });
 
   });
@@ -86,20 +89,20 @@ describe("parseBearerToken middleware", () => {
     it("should call next with MissingAuthorizationError when authorization header is missing", () => {
       // No authorization header set
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining("Authorization header is missing")
         })
       );
-      expect(res.locals.accessToken).toBeUndefined();
+      expect(res.locals.tokens.access).toBeUndefined();
     });
 
     it("should call next with MissingAuthorizationError when authorization header is undefined", () => {
       req.headers.authorization = undefined;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -111,7 +114,7 @@ describe("parseBearerToken middleware", () => {
     it("should call next with MissingAuthorizationError when authorization header is empty string", () => {
       req.headers.authorization = "";
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -123,7 +126,7 @@ describe("parseBearerToken middleware", () => {
     it("should call next with InvalidBearerFormatError when authorization header format is invalid", () => {
       req.headers.authorization = "Basic dXNlcjpwYXNzd29yZA==";
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -135,7 +138,7 @@ describe("parseBearerToken middleware", () => {
     it("should call next with InvalidBearerFormatError when Bearer has no token", () => {
       req.headers.authorization = "Bearer";
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -147,7 +150,7 @@ describe("parseBearerToken middleware", () => {
     it("should call next with InvalidBearerFormatError when Bearer has only spaces", () => {
       req.headers.authorization = "Bearer   ";
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -160,34 +163,34 @@ describe("parseBearerToken middleware", () => {
 
   describe("Successful bearer token parsing", () => {
 
-    it("should successfully parse bearer token and store in res.locals", () => {
+    it("should successfully parse bearer token and store in res.locals.tokens.access", () => {
       const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOjEyMzQ1fQ.signature";
       req.headers.authorization = `Bearer ${token}`;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.accessToken).toBe(token);
+      expect(res.locals.tokens.access).toBe(token);
     });
 
     it("should handle Bearer with multiple spaces", () => {
       const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOjEyMzQ1fQ.signature";
       req.headers.authorization = `Bearer    ${token}`;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.accessToken).toBe(token);
+      expect(res.locals.tokens.access).toBe(token);
     });
 
     it("should handle Bearer with exactly one space", () => {
       const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOjEyMzQ1fQ.signature";
       req.headers.authorization = `Bearer ${token}`;
       
-      parseBearerToken(req, res, next);
+      parseBearer(req, res, next);
       
       expect(next).toHaveBeenCalledWith();
-      expect(res.locals.accessToken).toBe(token);
+      expect(res.locals.tokens.access).toBe(token);
     });
 
   });

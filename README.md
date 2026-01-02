@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/npm/l/@dwtechs/toker-express.svg?color=brightgreen)](https://opensource.org/licenses/MIT)
 [![npm version](https://badge.fury.io/js/%40dwtechs%2Ftoker-express.svg)](https://www.npmjs.com/package/@dwtechs/toker-express)
 [![last version release date](https://img.shields.io/github/release-date/DWTechs/Toker-express.js)](https://www.npmjs.com/package/@dwtechs/toker-express)
-![Jest:coverage](https://img.shields.io/badge/Jest:coverage-93%25-brightgreen.svg)
+![Jest:coverage](https://img.shields.io/badge/Jest:coverage-94%25-brightgreen.svg)
 
 
 - [Synopsis](#synopsis)
@@ -47,7 +47,7 @@ $ npm i @dwtechs/toker-express
 ```javascript
 
 // @ts-check
-import * as tk from "@dwtechs/toker-express";
+import { parseBearer, createTokens, refreshTokens, decodeAccess, decodeRefresh, } from "@dwtechs/toker-express";
 import express from "express";
 const router = express.Router();
 
@@ -60,24 +60,24 @@ const add = [
   uEntity.normalize,
   uEntity.validate,
   login,
-  tk.refresh,
+  createTokens,
   cEntity.add,
 ];
 
 const refresh = [
   cEntity.validate,
-  tk.parseBearerToken,
-  tk.decodeAccess,
-  tk.decodeRefresh,
+  parseBearer,
+  decodeAccess,
+  decodeRefresh,
   checkToken,
-  tk.refresh,
+  refreshTokens,
   cEntity.update,
 ];
 
 const del = [
   checkToken,
-  tk.parseBearerToken,
-  tk.decodeAccess,
+  parseBearer,
+  decodeAccess,
   cEntity.delete,
 ];
 
@@ -125,22 +125,49 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_
 ```typescript
 
 /**
- * Express middleware to generate new access and refresh JWT tokens for a user.
+ * Express middleware to create new access and refresh JWT tokens for a user.
  *
- * This middleware creates new access and refresh tokens based on:
- * 1. The issuer (iss) from `res.locals.decodedAccessToken.iss` if available, OR
- * 2. The user ID from `res.locals.id` if no decoded token is present
+ * This middleware generates new access and refresh tokens using the user ID
+ * from `res.locals.user.id` and stores them in `req.body.rows[0]` for
+ * subsequent processing (e.g., database insertion).
+ * Note that this middleware assumes that `req.body.rows[0]` already exists 
+ * with some user data like nickname and roles.
  *
- * The generated tokens are stored in:
- * - `res.locals.accessToken` and `res.locals.refreshToken`
- * - `req.body.rows[0].accessToken` and `req.body.rows[0].refreshToken` (if rows array exists)
- *
- * @param {Request} req - The Express request object. May contain:
- *   - `req.body.rows`: Optional array where tokens will be added to first element
+ * @param {Request} req - The Express request object. Should contain:
+ *   - `req.body.rows`: Array where tokens will be added to the first element
  * @param {Response} res - The Express response object. Should contain:
- *   - `res.locals.decodedAccessToken.iss`: User ID from decoded access token (checked first), OR
- *   - `res.locals.id`: User ID (used if decodedAccessToken is not available)
- *   Tokens will be added to `res.locals.accessToken` and `res.locals.refreshToken`
+ *   - `res.locals.user.id`: User ID to use as issuer (iss) in the tokens
+ * @param {NextFunction} next - Express next middleware function
+ *
+ * @returns {void}
+ *
+ * @throws Will call next() with error object containing:
+ *   - statusCode: 400 - When user ID (iss) is missing or invalid (not a number between 1-999999999)
+ *   - statusCode: 500 - When token signing fails (invalid secrets, duration, or base64 secret)
+ *
+ * @example
+ * // After user creation/registration, call createTokens to generate tokens
+ * app.post('/login', validateUser, createTokens, saveConsumer, ...);
+ */
+function createTokens(req: Request, res: Response, next: NextFunction): void {}
+
+/**
+ * Express middleware to refresh and generate new access and refresh JWT tokens.
+ *
+ * This middleware creates new access and refresh tokens using the user ID (iss)
+ * from a previously decoded access token stored by decodeAccess middleware 
+ * in `res.locals.tokens.decodedAccess.iss`.
+ * The generated tokens are stored in `req.body.rows[0]` for subsequent processing.
+ * This is typically used in token refresh flows where an existing access token 
+ * has been decoded and validated.
+ * Note that req.body.rows[0] must already exist at this stage because with consumer id
+ * because consumer id has already been found at this stage and will be used top update
+ * the consumer in the database.
+ *
+ * @param {Request} req - The Express request object. Should contain:
+ *   - `req.body.rows`: Array where tokens will be added to the first element
+ * @param {Response} res - The Express response object. Should contain:
+ *   - `res.locals.tokens.decodedAccess.iss`: User ID from the decoded access token
  * @param {NextFunction} next - Express next middleware function
  *
  * @returns {void}
@@ -150,142 +177,177 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_
  *   - statusCode: 500 - When token signing fails (invalid secrets, duration, or base64 secret)
  *
  * @example
- * // After successful authentication, call refresh to generate tokens
- * app.post('/login', authenticate, refresh, (req, res) => {
- *   res.json({ 
- *     accessToken: res.locals.accessToken, 
- *     refreshToken: res.locals.refreshToken 
- *   });
- * });
+ * // Token refresh flow with decoded access token
+ * app.post('/refresh', decodeAccess, refreshTokens, updateDatabase, ...);
  */
-function refresh(req: Request, res: Response, next: NextFunction): void {}
+function refreshTokens(req: Request, res: Response, next: NextFunction): void {}
 
 /**
- * Express middleware function to parse the bearer token from the Authorization header.
+ * Express middleware to extract the JWT bearer token from the Authorization header.
  * 
  * This middleware extracts the JWT token from the Authorization header (Bearer scheme)
- * and stores it in res.locals.accessToken for use by subsequent middleware.
- * It only processes requests that have `res.locals.isProtected` set to true.
+ * and stores it in `res.locals.tokens.access` for use by subsequent middleware (typically decodeAccess).
+ * It only processes requests that have `res.locals.route.isProtected` set to true.
+ * For non-protected routes, it simply passes control to the next middleware.
  * 
- * @param {Request} req - The Express request object containing the Authorization header
+ * @param {Request} req - The Express request object. Should contain:
+ *   - `req.headers.authorization`: Authorization header with Bearer token format
  * @param {Response} res - The Express response object. Should contain:
- *   - `res.locals.isProtected`: Boolean flag to determine if route requires JWT protection
- *   Parsed token will be added to `res.locals.accessToken`
+ *   - `res.locals.route.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   Parsed token will be added to `res.locals.tokens.access`
  * @param {NextFunction} next - The next middleware function to be called
  * 
- * @returns {void} Calls the next middleware function with an error object if parsing fails.
+ * @returns {void}
  *
- * @throws {MissingAuthorizationError} If the Authorization header is missing (HTTP 401)
- * @throws {InvalidBearerFormatError} If the Authorization header format is invalid (HTTP 401)
+ * @throws Will call next() with error when:
+ *   - Authorization header is missing (HTTP 401)
+ *   - Authorization header format is invalid or not Bearer scheme (HTTP 401)
  * 
+ * @example
+ * // Use in protected route chain
+ * app.get('/profile', parseBearer, decodeAccess, ...);
  */
-function parseBearerToken(req: Request, res: Response, next: NextFunction): void {}
+function parseBearer(req: Request, res: Response, next: NextFunction): void {}
 
 /**
- * Express middleware function to decode and verify an access token.
+ * Express middleware to decode and verify an access token.
  * 
- * This middleware validates the JWT access token from res.locals.accessToken,
- * verifies its signature, and attaches the decoded token to res.locals.decodedAccessToken 
- * for use by subsequent middleware. It only processes requests that have `res.locals.isProtected` set to true.
+ * This middleware validates the JWT access token from `res.locals.tokens.access`,
+ * verifies its signature and structure, validates the issuer (iss) claim,
+ * and stores the decoded token in `res.locals.tokens.decodedAccess` for use by 
+ * subsequent middleware. It only processes requests that have `res.locals.route.isProtected` 
+ * set to true. For non-protected routes, it simply passes control to the next middleware.
  * 
- * @param {Request} req - The Express request object
+ * Note: This middleware IGNORES token expiration (exp claim) by design, allowing 
+ * expired access tokens to be decoded. This is useful for token refresh flows where 
+ * you need to identify the user even after their access token has expired.
+ * 
+ * @param {Request} _req - The Express request object (unused)
  * @param {Response} res - The Express response object. Should contain:
- *   - `res.locals.isProtected`: Boolean flag to determine if route requires JWT protection
- *   - `res.locals.accessToken`: The JWT token to decode
- *   Decoded token will be added to `res.locals.decodedAccessToken`
+ *   - `res.locals.route.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   - `res.locals.tokens.access`: The JWT token to decode (from parseBearer middleware)
+ *   Decoded token will be added to `res.locals.tokens.decodedAccess`
  * @param {NextFunction} next - The next middleware function to be called
  * 
- * @returns {void} Calls the next middleware function with an error object if the token is invalid or iss is missing.
+ * @returns {void}
  *
- * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
- * @throws {ExpiredTokenError} If the token has expired (exp claim) (HTTP 401)
- * @throws {InactiveTokenError} If the token cannot be used yet (nbf claim) (HTTP 401)
- * @throws {InvalidSignatureError} If the token signature is invalid (HTTP 401)
- * @throws {InvalidSecretsError} If the secrets configuration is invalid (HTTP 500)
- * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
- * @throws {Object} Will call next() with error object containing:
- *   - statusCode: 401 - When token is not a valid JWT format
- *   - statusCode: 400 - When decoded token is missing required 'iss' claim
+ * @throws Will call next() with error when:
+ *   - Token is not a valid JWT format (HTTP 401)
+ *   - Token is malformed or has invalid structure (HTTP 401)
+ *   - Token cannot be used yet (nbf claim) (HTTP 401)
+ *   - Token signature is invalid (HTTP 401)
+ *   - Issuer (iss) is missing or invalid - not a number between 1-999999999 (HTTP 400)
+ *   - Secrets configuration is invalid (HTTP 500)
+ *   - Secret cannot be decoded from base64 (HTTP 500)
  * 
+ * @example
+ * // Use in protected route chain for token refresh
+ * app.post('/refresh', parseBearer, decodeAccess, refreshTokens, ...);
  */
-function decodeAccess(req: Request, res: Response, next: NextFunction): void {}
+function decodeAccess(_req: Request, res: Response, next: NextFunction): void {}
 
 /**
- * Middleware function to decode and verify a refresh token from the request body.
+ * Express middleware to decode and verify a refresh token from the request body.
  * 
- * @param {Request} req - The request object containing the refresh token in `req.body.refreshToken`
- * @param {Response} res - The response object. Decoded token will be added to `res.locals.decodedRefreshToken`
- * @param {NextFunction} next - The next middleware function to be called.
+ * This middleware validates the JWT refresh token from `req.body.refreshToken`,
+ * verifies its signature, structure, expiration, and the issuer (iss) claim,
+ * then stores the decoded token in `res.locals.tokens.decodedRefresh` for use
+ * by subsequent middleware.
  * 
- * @returns {void} Calls the next middleware function with an error object if the token is invalid or iss is missing.
+ * Note: Unlike decodeAccess, this middleware DOES check token expiration (exp claim).
+ * Refresh tokens must be valid and not expired.
+ * 
+ * @param {Request} req - The Express request object. Should contain:
+ *   - `req.body.refreshToken`: The JWT refresh token to decode and verify
+ * @param {Response} res - The Express response object.
+ *   Decoded token will be added to `res.locals.tokens.decodedRefresh`
+ * @param {NextFunction} next - The next middleware function to be called
+ * 
+ * @returns {void}
  *
- * @throws {InvalidTokenError} If the token is malformed or has invalid structure (HTTP 401)
- * @throws {InvalidSecretsError} If the secrets configuration is invalid (HTTP 500)
- * @throws {ExpiredTokenError} If the refresh token has expired (exp claim) (HTTP 401)
- * @throws {InactiveTokenError} If the token cannot be used yet (nbf claim) (HTTP 401)
- * @throws {InvalidSignatureError} If the token signature is invalid (HTTP 401)
- * @throws {InvalidBase64Secret} If the secret cannot be decoded from base64 (HTTP 500)
- * @throws {Object} Will call next() with error object containing:
- *   - statusCode: 401 - When refresh token is not a valid JWT format
- *   - statusCode: 400 - When decoded token is missing required 'iss' claim
+ * @throws Will call next() with error when:
+ *   - Token is not a valid JWT format (HTTP 401)
+ *   - Token is malformed or has invalid structure (HTTP 401)
+ *   - Token has expired (exp claim) (HTTP 401)
+ *   - Token cannot be used yet (nbf claim) (HTTP 401)
+ *   - Token signature is invalid (HTTP 401)
+ *   - Issuer (iss) is missing or invalid - not a number between 1-999999999 (HTTP 400)
+ *   - Secrets configuration is invalid (HTTP 500)
+ *   - Secret cannot be decoded from base64 (HTTP 500)
+ * 
+ * @example
+ * // Use in refresh token flow
+ * app.post('/refresh', parseBearer, decodeAccess, decodeRefresh, refreshTokens, ...);
  */
-function decodeRefresh(req: Request, _res: Response, next: NextFunction): void {}
+function decodeRefresh(req: Request, res: Response, next: NextFunction): void {}
 
 ```
 
-### JWT Refresh
+### JWT Token Generation
 
-This function will look for an ISS (user ID) from two possible sources:
+#### createTokens
+
+This function creates new tokens for a new user or during initial login. It looks for the user ID from:
 
 ```Javascript
-let iss = res.locals?.decodedAccessToken?.iss;
-
-if (!iss)
-  iss = res.locals.id ?? null;
+const iss = res.locals.user.id;
 ```
 
-It will then send both new refresh and access tokens in the res.locals object and in req.body.rows[0].
-
-**Note:** If `req.body.rows` doesn't exist or is not an array, it will be automatically created as `[{}]`. If `req.body.rows[0]` is not an object, it will be replaced with `{}`.
+It stores both new refresh and access tokens in `req.body.rows[0]`:
 
 ```Javascript
-res.locals.accessToken = accessToken;
-res.locals.refreshToken = refreshToken;
-
-// req.body.rows is automatically created if needed
-req.body.rows[0].accessToken = accessToken;
-req.body.rows[0].refreshToken = refreshToken;
+req.body.rows[0].accessToken = at;
+req.body.rows[0].refreshToken = rt;
 ```
+
+**Note:** This function assumes that `req.body.rows[0]` already exists with user data like nickname and roles.
+
+#### refreshTokens
+
+This function refreshes tokens for existing users. It looks for the user ID (iss) from a decoded access token:
+
+```Javascript
+let iss = res.locals?.tokens?.decodedAccess?.iss;
+```
+
+It stores both new refresh and access tokens in `req.body.rows[0]`:
+
+```Javascript
+req.body.rows[0].accessToken = at;
+req.body.rows[0].refreshToken = rt;
+```
+
+**Note:** This function assumes that `req.body.rows[0]` already exists with consumer data that will be updated in the database.
 
 ### JWT Decoding
 
 #### Route Protection with isProtected
 
-The `parseBearerToken()` and `decodeAccess()` middlewares only process requests when `res.locals.isProtected` is set to `true`. This allows you to selectively protect routes that require authentication.
+The `parseBearer()` and `decodeAccess()` middlewares only process requests when `res.locals.route.isProtected` is set to `true`. This allows you to selectively protect routes that require authentication.
 
 You should set this flag in a middleware before calling these functions:
 
 ```Javascript
 // Example middleware to mark route as protected
 function protectRoute(req, res, next) {
-  res.locals.isProtected = true;
+  res.locals.route = { isProtected: true };
   next();
 }
 
 // Usage
-router.get('/protected-route', protectRoute, tk.parseBearerToken, tk.decodeAccess, yourHandler);
+router.get('/protected-route', protectRoute, tk.parseBearer, tk.decodeAccess, yourHandler);
 ```
 
-If `res.locals.isProtected` is `false`, `undefined`, or `null`, these middlewares will simply call `next()` without processing the token, allowing the request to continue to the next middleware.
+If `res.locals.route.isProtected` is `false`, `undefined`, or `null`, these middlewares will simply call `next()` without processing the token, allowing the request to continue to the next middleware.
 
 #### Access Token Processing
 
-The access token processing is now split into two separate middlewares for better flexibility:
+The access token processing is split into two separate middlewares for better flexibility:
 
-1. **parseBearerToken()** - Extracts the bearer token from the Authorization header
+1. **parseBearer()** - Extracts the bearer token from the Authorization header
 2. **decodeAccess()** - Validates and decodes the JWT token
 
-##### parseBearerToken()
+##### parseBearer()
 
 This middleware extracts the JWT token from the Authorization header using the Bearer scheme.
 
@@ -293,31 +355,33 @@ This middleware extracts the JWT token from the Authorization header using the B
 const bearer = req.headers.authorization; // "Bearer <token>"
 ```
 
-The parsed token is then stored in `res.locals.accessToken`:
+The parsed token is then stored in `res.locals.tokens.access`:
 
 ```Javascript
-res.locals.accessToken = token;
+res.locals.tokens.access = token;
 ```
 
 ##### decodeAccess()
 
-This middleware takes the token from `res.locals.accessToken`, validates it, and decodes it.
+This middleware takes the token from `res.locals.tokens.access`, validates it, and decodes it.
 
 ```Javascript
-const token = res.locals.accessToken;
+const token = res.locals.tokens.access;
 ```
 
-The decoded token is then stored in `res.locals.decodedAccessToken`:
+The decoded token is then stored in `res.locals.tokens.decodedAccess`:
 
 ```Javascript
-res.locals.decodedAccessToken = decodedToken;
+res.locals.tokens.decodedAccess = decodedToken;
 ```
 
-**Note:** You should use both middlewares in sequence for full access token processing, or you can use just `parseBearerToken()` if you only need to extract the token without decoding it.
+**Important:** This middleware **ignores token expiration** by design. This allows expired access tokens to be decoded, which is useful for token refresh flows where you need to identify the user even after their access token has expired.
+
+**Note:** You should use both middlewares in sequence for full access token processing, or you can use just `parseBearer()` if you only need to extract the token without decoding it.
 
 #### Refresh Token Decoding
 
-decodeRefresh() functions will look for a token in the client request body.
+decodeRefresh() function will look for a token in the client request body.
 
 ```Javascript
 const token = req.body.refreshToken;
@@ -326,8 +390,10 @@ const token = req.body.refreshToken;
 It will then send the decoded token in the res object.
 
 ```Javascript
-res.locals.decodedRefreshToken = decodedToken;
+res.locals.tokens.decodedRefresh = decodedToken;
 ```
+
+**Important:** Unlike `decodeAccess()`, this middleware **does check token expiration**. Refresh tokens must be valid and not expired.
 
 
 ## Logs

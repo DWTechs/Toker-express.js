@@ -1,3 +1,18 @@
+# 0.6.0 (Jan 1st 2026)
+
+  - Renamed `parseBearerToken()` to `parseBearer()` for consistency
+  - Renamed `refresh()` to `refreshTokens()` for clarity
+  - Restructured `res.locals` property paths for better organization:
+    - `res.locals.isProtected` → `res.locals.route.isProtected`
+    - `res.locals.accessToken` → `res.locals.tokens.access`
+    - `res.locals.decodedAccessToken` → `res.locals.tokens.decodedAccess`
+    - `res.locals.decodedRefreshToken` → `res.locals.tokens.decodedRefresh`
+  - Added `createTokens()` middleware to generate tokens for new consumers
+    - Uses `res.locals.user.id` as issuer (iss)
+    - Stores tokens in `req.body.rows[0]` for database operations
+    - Validates user ID with `isValidInteger()` to reject floats and ensure proper integer values
+  - Updated `createTokens()` and `refreshTokens()` to use `isValidInteger()` instead of `isValidNumber()` for stricter validation
+
 # 0.5.2 (Dec 28th 2025)
 
   - `refresh()` middleware now automatically creates `req.body.rows` array if it doesn't exist
