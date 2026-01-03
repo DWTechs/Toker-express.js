@@ -91,16 +91,17 @@ function parseBearer(req, res, next) {
     next();
 }
 function decodeAccess(_req, res, next) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g;
     log.debug(`${LOGS_PREFIX}decode access token`);
     if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected))
         return next();
     const t = (_d = (_c = res.locals) === null || _c === void 0 ? void 0 : _c.tokens) === null || _d === void 0 ? void 0 : _d.access;
+    const ignoreExpiration = (_g = (_f = (_e = res.locals) === null || _e === void 0 ? void 0 : _e.tokens) === null || _f === void 0 ? void 0 : _f.ignoreExpiration) !== null && _g !== void 0 ? _g : false;
     if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid access token` });
     let dt = null;
     try {
-        dt = verify(t, secrets, true);
+        dt = verify(t, secrets, ignoreExpiration);
     }
     catch (e) {
         return next(e);

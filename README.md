@@ -218,14 +218,16 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {}
  * subsequent middleware. It only processes requests that have `res.locals.route.isProtected` 
  * set to true. For non-protected routes, it simply passes control to the next middleware.
  * 
- * Note: This middleware IGNORES token expiration (exp claim) by design, allowing 
- * expired access tokens to be decoded. This is useful for token refresh flows where 
- * you need to identify the user even after their access token has expired.
+ * Note: By default, this middleware checks token expiration (exp claim) and will reject
+ * expired tokens. For token refresh flows where you need to identify the user even after 
+ * their access token has expired, set `res.locals.tokens.ignoreExpiration` to true before 
+ * calling decodeAccess function.
  * 
  * @param {Request} _req - The Express request object (unused)
  * @param {Response} res - The Express response object. Should contain:
  *   - `res.locals.route.isProtected`: Boolean flag to determine if route requires JWT protection
  *   - `res.locals.tokens.access`: The JWT token to decode (from parseBearer middleware)
+ *   - `res.locals.tokens.ignoreExpiration`: Optional boolean to skip expiration checking (default: false)
  *   Decoded token will be added to `res.locals.tokens.decodedAccess`
  * @param {NextFunction} next - The next middleware function to be called
  * 
@@ -234,6 +236,7 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {}
  * @throws Will call next() with error when:
  *   - Token is not a valid JWT format (HTTP 401)
  *   - Token is malformed or has invalid structure (HTTP 401)
+ *   - Token has expired (exp claim) - unless ignoreExpiration is true (HTTP 401)
  *   - Token cannot be used yet (nbf claim) (HTTP 401)
  *   - Token signature is invalid (HTTP 401)
  *   - Issuer (iss) is missing or invalid - not a number between 1-999999999 (HTTP 400)
@@ -241,8 +244,15 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {}
  *   - Secret cannot be decoded from base64 (HTTP 500)
  * 
  * @example
- * // Use in protected route chain for token refresh
- * app.post('/refresh', parseBearer, decodeAccess, refreshTokens, ...);
+ * // Use in protected route chain (checks expiration by default)
+ * app.get('/protected', parseBearer, decodeAccess, ...);
+ * 
+ * @example
+ * // Use in token refresh flow (ignores expiration)
+ * app.post('/refresh', (req, res, next) => {
+ *   res.locals.tokens = { ignoreExpiration: true };
+ *   next();
+ * }, parseBearer, decodeAccess, refreshTokens, ...);
  */
 function decodeAccess(_req: Request, res: Response, next: NextFunction): void {}
 

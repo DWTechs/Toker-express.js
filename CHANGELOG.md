@@ -1,3 +1,10 @@
+# 0.7.0 (Jan 4th 2026)
+
+  - Added `res.locals.tokens.ignoreExpiration` parameter to `decodeAccess()` middleware for dynamic control of token expiration checking
+    - Default behavior: Expiration is checked (`ignoreExpiration = false`)
+    - Set `res.locals.tokens.ignoreExpiration = true` to skip expiration validation (useful for token refresh flows)
+    - Breaking change: `decodeAccess()` now validates expiration by default (previously always ignored)
+
 # 0.6.2 (Jan 3rd 2026)
 
   - Updated `parseBearer()`, `decodeAccess()`, and `decodeRefresh()` to use spread operator when updating `res.locals.tokens`, preserving existing properties instead of overwriting the entire object
