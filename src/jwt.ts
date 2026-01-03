@@ -163,12 +163,12 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
  */
 function parseBearer(req: Request, res: Response, next: NextFunction): void {
   
-  if (!res.locals.route.isProtected) return next(); // if no jwt protection for this route
+  if (!res.locals?.route?.isProtected) return next(); // if no jwt protection for this route
   
   log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
   
   try {
-    res.locals.tokens.access = pb(req.headers.authorization);
+    res.locals.tokens = { access: pb(req.headers.authorization) };
   } catch (e: any) {
     return next(e);
   }
@@ -216,9 +216,9 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
   
   log.debug(`${LOGS_PREFIX}decode access token`);
   
-  if (!res.locals.route.isProtected) return next(); // if no jwt protection for this route
+  if (!res.locals?.route?.isProtected) return next(); // if no jwt protection for this route
 
-  const t = res.locals.tokens.access;
+  const t = res.locals?.tokens?.access;
 
   if (!isJWT(t)) 
     return next({statusCode: 401, message: `${LOGS_PREFIX}Invalid access token`});
@@ -234,7 +234,7 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
 
   log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-  res.locals.tokens.decodedAccess = dt;
+  res.locals.tokens = { decodedAccess: dt };
   next();
 }
 
@@ -290,7 +290,7 @@ function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
 
   log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-  res.locals.tokens.decodedRefresh = dt;
+  res.locals.tokens = { decodedRefresh: dt };
   next();
 }
 

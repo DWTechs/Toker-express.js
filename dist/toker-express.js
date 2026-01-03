@@ -78,11 +78,12 @@ function refreshTokens(req, res, next) {
     next();
 }
 function parseBearer(req, res, next) {
-    if (!res.locals.route.isProtected)
+    var _a, _b;
+    if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected))
         return next();
     log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
     try {
-        res.locals.tokens.access = parseBearer$1(req.headers.authorization);
+        res.locals.tokens = { access: parseBearer$1(req.headers.authorization) };
     }
     catch (e) {
         return next(e);
@@ -90,10 +91,11 @@ function parseBearer(req, res, next) {
     next();
 }
 function decodeAccess(_req, res, next) {
+    var _a, _b, _c, _d;
     log.debug(`${LOGS_PREFIX}decode access token`);
-    if (!res.locals.route.isProtected)
+    if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected))
         return next();
-    const t = res.locals.tokens.access;
+    const t = (_d = (_c = res.locals) === null || _c === void 0 ? void 0 : _c.tokens) === null || _d === void 0 ? void 0 : _d.access;
     if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid access token` });
     let dt = null;
@@ -106,7 +108,7 @@ function decodeAccess(_req, res, next) {
     if (!isValidInteger(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-    res.locals.tokens.decodedAccess = dt;
+    res.locals.tokens = { decodedAccess: dt };
     next();
 }
 function decodeRefresh(req, res, next) {
@@ -125,7 +127,7 @@ function decodeRefresh(req, res, next) {
     if (!isValidInteger(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-    res.locals.tokens.decodedRefresh = dt;
+    res.locals.tokens = { decodedRefresh: dt };
     next();
 }
 

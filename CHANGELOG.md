@@ -1,3 +1,8 @@
+# 0.6.1 (Jan 2nd 2026)
+
+  - Fixed `parseBearer()` and `decodeAccess()` to use optional chaining (`?.`) for safer property access
+  - Fixed `res.locals.tokens` assignment in `parseBearer()`, `decodeAccess()`, and `decodeRefresh()` to create new objects instead of mutating properties
+
 # 0.6.0 (Jan 1st 2026)
 
   - Renamed `parseBearerToken()` to `parseBearer()` for consistency
