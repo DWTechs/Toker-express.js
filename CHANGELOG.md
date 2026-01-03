@@ -1,3 +1,7 @@
+# 0.6.2 (Jan 3rd 2026)
+
+  - Updated `parseBearer()`, `decodeAccess()`, and `decodeRefresh()` to use spread operator when updating `res.locals.tokens`, preserving existing properties instead of overwriting the entire object
+
 # 0.6.1 (Jan 2nd 2026)
 
   - Fixed `parseBearer()` and `decodeAccess()` to use optional chaining (`?.`) for safer property access

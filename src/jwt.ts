@@ -109,7 +109,7 @@ function createTokens(req: Request, res: Response, next: NextFunction): void {
  */
 function refreshTokens(req: Request, res: Response, next: NextFunction): void {
 
-  let iss = res.locals?.tokens?.decodedAccess?.iss;
+  const iss = res.locals?.tokens?.decodedAccess?.iss;
 
   if (!isValidInteger(iss, 1, 999999999, false))
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
@@ -168,7 +168,7 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {
   log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
   
   try {
-    res.locals.tokens = { access: pb(req.headers.authorization) };
+    res.locals.tokens = { ...res.locals.tokens, access: pb(req.headers.authorization) };
   } catch (e: any) {
     return next(e);
   }
@@ -234,7 +234,7 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
 
   log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-  res.locals.tokens = { decodedAccess: dt };
+  res.locals.tokens = { ...res.locals.tokens, decodedAccess: dt };
   next();
 }
 
@@ -290,7 +290,7 @@ function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
     return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
 
   log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-  res.locals.tokens = { decodedRefresh: dt };
+  res.locals.tokens = { ...res.locals.tokens, decodedRefresh: dt };
   next();
 }
 

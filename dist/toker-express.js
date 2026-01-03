@@ -59,7 +59,7 @@ function createTokens(req, res, next) {
 }
 function refreshTokens(req, res, next) {
     var _a, _b, _c;
-    let iss = (_c = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.tokens) === null || _b === void 0 ? void 0 : _b.decodedAccess) === null || _c === void 0 ? void 0 : _c.iss;
+    const iss = (_c = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.tokens) === null || _b === void 0 ? void 0 : _b.decodedAccess) === null || _c === void 0 ? void 0 : _c.iss;
     if (!isValidInteger(iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
@@ -83,7 +83,7 @@ function parseBearer(req, res, next) {
         return next();
     log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
     try {
-        res.locals.tokens = { access: parseBearer$1(req.headers.authorization) };
+        res.locals.tokens = Object.assign(Object.assign({}, res.locals.tokens), { access: parseBearer$1(req.headers.authorization) });
     }
     catch (e) {
         return next(e);
@@ -108,7 +108,7 @@ function decodeAccess(_req, res, next) {
     if (!isValidInteger(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-    res.locals.tokens = { decodedAccess: dt };
+    res.locals.tokens = Object.assign(Object.assign({}, res.locals.tokens), { decodedAccess: dt });
     next();
 }
 function decodeRefresh(req, res, next) {
@@ -127,7 +127,7 @@ function decodeRefresh(req, res, next) {
     if (!isValidInteger(dt.iss, 1, 999999999, false))
         return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
     log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-    res.locals.tokens = { decodedRefresh: dt };
+    res.locals.tokens = Object.assign(Object.assign({}, res.locals.tokens), { decodedRefresh: dt });
     next();
 }
 
