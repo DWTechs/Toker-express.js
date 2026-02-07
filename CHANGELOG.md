@@ -1,3 +1,8 @@
+# 0.7.1 (Feb 7th 2026)
+
+  - Dependencies updates:
+    - "@dwtechs/toker": "0.1.2",
+
 # 0.7.0 (Jan 4th 2026)
 
   - Added `res.locals.tokens.ignoreExpiration` parameter to `decodeAccess()` middleware for dynamic control of token expiration checking
