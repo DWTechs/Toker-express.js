@@ -84,6 +84,47 @@ describe("decodeAccess middleware", () => {
       expect(res.locals.tokens.decodedAccess).toBeUndefined();
     });
 
+    it("should bypass middleware when both isProtected and protected are false", () => {
+      res.locals.route.isProtected = false;
+      res.locals.route.protected = false;
+      
+      decodeAccess(req, res, next);
+      
+      expect(next).toHaveBeenCalledWith();
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.locals.tokens.decodedAccess).toBeUndefined();
+    });
+
+    it("should process middleware when res.locals.route.protected is true", async () => {
+      res.locals.route.isProtected = false;
+      res.locals.route.protected = true;
+      const validToken = sign(12345, 3600, "access", secrets);
+      res.locals.tokens.access = validToken;
+      
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      
+      decodeAccess(req, res, next);
+      
+      expect(next).toHaveBeenCalledWith();
+      expect(res.locals.tokens.decodedAccess).toBeDefined();
+      expect(res.locals.tokens.decodedAccess.iss).toBe(12345);
+    });
+
+    it("should process middleware when res.locals.route.isProtected is true regardless of protected", async () => {
+      res.locals.route.isProtected = true;
+      res.locals.route.protected = false;
+      const validToken = sign(12345, 3600, "access", secrets);
+      res.locals.tokens.access = validToken;
+      
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      
+      decodeAccess(req, res, next);
+      
+      expect(next).toHaveBeenCalledWith();
+      expect(res.locals.tokens.decodedAccess).toBeDefined();
+      expect(res.locals.tokens.decodedAccess.iss).toBe(12345);
+    });
+
   });
 
   describe("JWT format validation", () => {

@@ -78,8 +78,8 @@ function refreshTokens(req, res, next) {
     next();
 }
 function parseBearer(req, res, next) {
-    var _a, _b;
-    if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected))
+    var _a, _b, _c, _d;
+    if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected) && !((_d = (_c = res.locals) === null || _c === void 0 ? void 0 : _c.route) === null || _d === void 0 ? void 0 : _d.protected))
         return next();
     log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
     try {
@@ -91,12 +91,12 @@ function parseBearer(req, res, next) {
     next();
 }
 function decodeAccess(_req, res, next) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     log.debug(`${LOGS_PREFIX}decode access token`);
-    if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected))
+    if (!((_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.route) === null || _b === void 0 ? void 0 : _b.isProtected) && !((_d = (_c = res.locals) === null || _c === void 0 ? void 0 : _c.route) === null || _d === void 0 ? void 0 : _d.protected))
         return next();
-    const t = (_d = (_c = res.locals) === null || _c === void 0 ? void 0 : _c.tokens) === null || _d === void 0 ? void 0 : _d.access;
-    const ignoreExpiration = (_g = (_f = (_e = res.locals) === null || _e === void 0 ? void 0 : _e.tokens) === null || _f === void 0 ? void 0 : _f.ignoreExpiration) !== null && _g !== void 0 ? _g : false;
+    const t = (_f = (_e = res.locals) === null || _e === void 0 ? void 0 : _e.tokens) === null || _f === void 0 ? void 0 : _f.access;
+    const ignoreExpiration = (_j = (_h = (_g = res.locals) === null || _g === void 0 ? void 0 : _g.tokens) === null || _h === void 0 ? void 0 : _h.ignoreExpiration) !== null && _j !== void 0 ? _j : false;
     if (!isJWT(t))
         return next({ statusCode: 401, message: `${LOGS_PREFIX}Invalid access token` });
     let dt = null;

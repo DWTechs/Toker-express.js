@@ -163,7 +163,7 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
  */
 function parseBearer(req: Request, res: Response, next: NextFunction): void {
   
-  if (!res.locals?.route?.isProtected) return next(); // if no jwt protection for this route
+  if (!res.locals?.route?.isProtected && !res.locals?.route?.protected) return next(); // if no jwt protection for this route
   
   log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
   
@@ -226,7 +226,7 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
   
   log.debug(`${LOGS_PREFIX}decode access token`);
   
-  if (!res.locals?.route?.isProtected) return next(); // if no jwt protection for this route
+  if (!res.locals?.route?.isProtected && !res.locals?.route?.protected) return next(); // if no jwt protection for this route
 
   const t = res.locals?.tokens?.access;
   const ignoreExpiration = res.locals?.tokens?.ignoreExpiration ?? false;

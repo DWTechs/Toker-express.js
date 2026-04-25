@@ -187,13 +187,13 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {}
  * 
  * This middleware extracts the JWT token from the Authorization header (Bearer scheme)
  * and stores it in `res.locals.tokens.access` for use by subsequent middleware (typically decodeAccess).
- * It only processes requests that have `res.locals.route.isProtected` set to true.
+ * It only processes requests that have `res.locals.route.isProtected` or `res.locals.route.protected` set to true.
  * For non-protected routes, it simply passes control to the next middleware.
  * 
  * @param {Request} req - The Express request object. Should contain:
  *   - `req.headers.authorization`: Authorization header with Bearer token format
  * @param {Response} res - The Express response object. Should contain:
- *   - `res.locals.route.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   - `res.locals.route.isProtected` or `res.locals.route.protected`: Boolean flag to determine if route requires JWT protection
  *   Parsed token will be added to `res.locals.tokens.access`
  * @param {NextFunction} next - The next middleware function to be called
  * 
@@ -215,8 +215,8 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {}
  * This middleware validates the JWT access token from `res.locals.tokens.access`,
  * verifies its signature and structure, validates the issuer (iss) claim,
  * and stores the decoded token in `res.locals.tokens.decodedAccess` for use by 
- * subsequent middleware. It only processes requests that have `res.locals.route.isProtected` 
- * set to true. For non-protected routes, it simply passes control to the next middleware.
+ * subsequent middleware. It only processes requests that have `res.locals.route.isProtected`
+ * or `res.locals.route.protected` set to true. For non-protected routes, it simply passes control to the next middleware.
  * 
  * Note: By default, this middleware checks token expiration (exp claim) and will reject
  * expired tokens. For token refresh flows where you need to identify the user even after 
@@ -225,7 +225,7 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {}
  * 
  * @param {Request} _req - The Express request object (unused)
  * @param {Response} res - The Express response object. Should contain:
- *   - `res.locals.route.isProtected`: Boolean flag to determine if route requires JWT protection
+ *   - `res.locals.route.isProtected` or `res.locals.route.protected`: Boolean flag to determine if route requires JWT protection
  *   - `res.locals.tokens.access`: The JWT token to decode (from parseBearer middleware)
  *   - `res.locals.tokens.ignoreExpiration`: Optional boolean to skip expiration checking (default: false)
  *   Decoded token will be added to `res.locals.tokens.decodedAccess`
@@ -331,16 +331,16 @@ req.body.rows[0].refreshToken = rt;
 
 ### JWT Decoding
 
-#### Route Protection with isProtected
+#### Route Protection with isProtected / protected
 
-The `parseBearer()` and `decodeAccess()` middlewares only process requests when `res.locals.route.isProtected` is set to `true`. This allows you to selectively protect routes that require authentication.
+The `parseBearer()` and `decodeAccess()` middlewares only process requests when `res.locals.route.isProtected` or `res.locals.route.protected` is set to `true`. This allows you to selectively protect routes that require authentication.
 
-You should set this flag in a middleware before calling these functions:
+You should set one of these flags in a middleware before calling these functions:
 
 ```Javascript
 // Example middleware to mark route as protected
 function protectRoute(req, res, next) {
-  res.locals.route = { isProtected: true };
+  res.locals.route = { isProtected: true }; // or { protected: true }
   next();
 }
 
@@ -348,7 +348,7 @@ function protectRoute(req, res, next) {
 router.get('/protected-route', protectRoute, tk.parseBearer, tk.decodeAccess, yourHandler);
 ```
 
-If `res.locals.route.isProtected` is `false`, `undefined`, or `null`, these middlewares will simply call `next()` without processing the token, allowing the request to continue to the next middleware.
+If both `res.locals.route.isProtected` and `res.locals.route.protected` are `false`, `undefined`, or `null`, these middlewares will simply call `next()` without processing the token, allowing the request to continue to the next middleware.
 
 #### Access Token Processing
 
