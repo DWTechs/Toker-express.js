@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "module": "ES6",
-    "moduleResolution": "node",
-    "target": "ES6",
-    "lib": ["dom", "es2019"],
+    "module": "ES2020",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "lib": ["es2020"],
+    "skipLibCheck": true,
     "sourceMap": false,
     "noImplicitAny": true,
     "noImplicitReturns": true,

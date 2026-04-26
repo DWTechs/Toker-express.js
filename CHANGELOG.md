@@ -1,5 +1,10 @@
 # 0.7.2 (Apr 24th 2026)
 
+  - Performance improvements
+  - Raised module compiler to `ES2020`
+  - Dependencies updates:
+    - `@dwtechs/winstan`: `0.7.0`
+    - `typescript`: `6.0.3`
   - Updated `parseBearer()` and `decodeAccess()` to check both `res.locals.route.isProtected` and `res.locals.route.protected` flags for route protection
 
 # 0.7.1 (Feb 7th 2026)

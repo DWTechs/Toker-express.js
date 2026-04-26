@@ -51,12 +51,14 @@ const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH
  */
 function createTokens(req: Request, res: Response, next: NextFunction): void {
 
-   const iss = res.locals?.user?.id;
+  const iss = res.locals?.user?.id;
 
-  if (!isValidInteger(iss, 1, 999999999, false))
-    return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+  if (!isValidInteger(iss, 1, 999999999, false)) {
+    next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    return;
+  }
 
-  log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
+  log.debug(() => `${LOGS_PREFIX}Create tokens for user ${iss}`);
 
   let at: string; // access token
   let rt: string; // refresh token
@@ -64,9 +66,10 @@ function createTokens(req: Request, res: Response, next: NextFunction): void {
     at = sign(iss, accessDuration, "access", secrets);
     rt = sign(iss, refreshDuration, "refresh", secrets);
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
-  log.debug(`refreshToken='${rt}', accessToken='${at}'`);
+  log.debug(() => `refreshToken='${rt}', accessToken='${at}'`);
   
   // req.body.rows[0] already exists because user has already been validated at this stage
   // so we have user nickname and roles.
@@ -111,10 +114,12 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
 
   const iss = res.locals?.tokens?.decodedAccess?.iss;
 
-  if (!isValidInteger(iss, 1, 999999999, false))
-    return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+  if (!isValidInteger(iss, 1, 999999999, false)) {
+    next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    return;
+  }
 
-  log.debug(`${LOGS_PREFIX}Create tokens for user ${iss}`);
+  log.debug(() => `${LOGS_PREFIX}Create tokens for user ${iss}`);
 
   let at: string; // access token
   let rt: string; // refresh token
@@ -122,9 +127,10 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
     at = sign(iss, accessDuration, "access", secrets);
     rt = sign(iss, refreshDuration, "refresh", secrets);
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
-  log.debug(`refreshToken='${rt}', accessToken='${at}'`);
+  log.debug(() => `refreshToken='${rt}', accessToken='${at}'`);
 
   // req.body.rows[0] should already exist because consumer id has already been found at this stage
   req.body.rows[0].accessToken = at;
@@ -163,14 +169,16 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
  */
 function parseBearer(req: Request, res: Response, next: NextFunction): void {
   
-  if (!res.locals?.route?.isProtected && !res.locals?.route?.protected) return next(); // if no jwt protection for this route
+  if (!res.locals?.route?.isProtected && !res.locals?.route?.protected) { next(); return; } // if no jwt protection for this route
   
-  log.debug(`${LOGS_PREFIX}parse bearer to get access token`);
+  log.debug(() => `${LOGS_PREFIX}parse bearer to get access token`);
   
   try {
-    res.locals.tokens = { ...res.locals.tokens, access: pb(req.headers.authorization) };
-  } catch (e: any) {
-    return next(e);
+    res.locals.tokens ??= {};
+    res.locals.tokens.access = pb(req.headers.authorization);
+  } catch (e: unknown) {
+    next(e);
+    return;
   }
 
   next();
@@ -224,28 +232,34 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {
  */
 function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
   
-  log.debug(`${LOGS_PREFIX}decode access token`);
+  log.debug(() => `${LOGS_PREFIX}decode access token`);
   
-  if (!res.locals?.route?.isProtected && !res.locals?.route?.protected) return next(); // if no jwt protection for this route
+  if (!res.locals?.route?.isProtected && !res.locals?.route?.protected) { next(); return; } // if no jwt protection for this route
 
   const t = res.locals?.tokens?.access;
   const ignoreExpiration = res.locals?.tokens?.ignoreExpiration ?? false;
 
-  if (!isJWT(t)) 
-    return next({statusCode: 401, message: `${LOGS_PREFIX}Invalid access token`});
+  if (!isJWT(t)) {
+    next({statusCode: 401, message: `${LOGS_PREFIX}Invalid access token`});
+    return;
+  }
 
   let dt = null;
   try {
     dt = verify(t, secrets, ignoreExpiration); // decoded token
-  } catch (e: any) {
-    return next(e);
+  } catch (e: unknown) {
+    next(e);
+    return;
   }
 
-  if (!isValidInteger(dt.iss, 1, 999999999, false))
-    return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+  if (!isValidInteger(dt.iss, 1, 999999999, false)) {
+    next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    return;
+  }
 
-  log.debug(`${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
-  res.locals.tokens = { ...res.locals.tokens, decodedAccess: dt };
+  log.debug(() => `${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
+  res.locals.tokens ??= {};
+  res.locals.tokens.decodedAccess = dt;
   next();
 }
 
@@ -285,23 +299,29 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
  */
 function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
   const t = req.body?.refreshToken;
-  log.debug(`${LOGS_PREFIX}decodeRefresh(token=${t})`);
+  log.debug(() => `${LOGS_PREFIX}decodeRefresh(token=${t})`);
 
-  if (!isJWT(t)) 
-    return next({statusCode: 401, message: `${LOGS_PREFIX}Invalid refresh token`});
+  if (!isJWT(t)) {
+    next({statusCode: 401, message: `${LOGS_PREFIX}Invalid refresh token`});
+    return;
+  }
 
   let dt = null;
   try {
     dt = verify(t, secrets, false); // decoded token
-  } catch (e: any) {
-    return next(e);
+  } catch (e: unknown) {
+    next(e);
+    return;
   }
 
-  if (!isValidInteger(dt.iss, 1, 999999999, false))
-    return next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+  if (!isValidInteger(dt.iss, 1, 999999999, false)) {
+    next({ statusCode: 400, message: `${LOGS_PREFIX}Missing iss` });
+    return;
+  }
 
-  log.debug(`${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
-  res.locals.tokens = { ...res.locals.tokens, decodedRefresh: dt };
+  log.debug(() => `${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
+  res.locals.tokens ??= {};
+  res.locals.tokens.decodedRefresh = dt;
   next();
 }
 

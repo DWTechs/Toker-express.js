@@ -29,7 +29,7 @@ It includes @dwtechs/toker library and adds Express middlewares to be used in a 
 
 ## Support
 
-- node: 22
+- node: 18
 
 This is the oldest targeted versions.  
 
@@ -385,8 +385,6 @@ The decoded token is then stored in `res.locals.tokens.decodedAccess`:
 res.locals.tokens.decodedAccess = decodedToken;
 ```
 
-**Important:** This middleware **ignores token expiration** by design. This allows expired access tokens to be decoded, which is useful for token refresh flows where you need to identify the user even after their access token has expired.
-
 **Note:** You should use both middlewares in sequence for full access token processing, or you can use just `parseBearer()` if you only need to extract the token without decoding it.
 
 #### Refresh Token Decoding
@@ -410,6 +408,7 @@ res.locals.tokens.decodedRefresh = decodedToken;
 
 **Token-express.js** uses **[@dwtechs/Winstan](https://www.npmjs.com/package/@dwtechs/winstan)** library for logging.
 All logs are in debug mode. Meaning they should not appear in production mode.
+Log messages are passed as lazy functions (`() => string`) so string interpolation and serialization are skipped entirely when debug logging is disabled.
 
 ## Contributors
 
