@@ -531,4 +531,28 @@ describe("decodeRefresh middleware", () => {
 
   });
 
+  describe("Logging functionality", () => {
+
+    it("should log debug messages and not include token values", async () => {
+      const { log } = require("@dwtechs/winstan");
+      const validToken = sign(12345, 3600, "refresh", secrets);
+      req.body.refreshToken = validToken;
+
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      await decodeRefresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      const calls = log.debug.mock.calls;
+      expect(calls[0][0]()).toBe("Toker-express: Decoding refresh token");
+      expect(calls[1][0]()).toBe("Toker-express: Refresh token decoded for user 12345");
+      // Ensure no token values leak into logs
+      calls.forEach(call => {
+        const msg = call[0]();
+        expect(msg).not.toMatch(/eyJ/); // JWT header prefix
+      });
+    });
+
+  });
+
 });

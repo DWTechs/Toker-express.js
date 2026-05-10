@@ -548,3 +548,44 @@ describe("Integration: parseBearer + decodeAccess", () => {
   });
 
 });
+
+describe("decodeAccess logging", () => {
+  let req, res, next;
+  const secrets = ["YS1zdHJpbmctc2VjcmV0LWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc"];
+
+  beforeEach(() => {
+    req = { headers: {} };
+    res = {
+      locals: {
+        route: { isProtected: true },
+        tokens: {}
+      }
+    };
+    next = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should log debug messages and not include token values", async () => {
+    const { log } = require("@dwtechs/winstan");
+    const validToken = sign(12345, 3600, "access", secrets);
+    res.locals.tokens.access = validToken;
+
+    await new Promise(resolve => setTimeout(resolve, 1100));
+
+    decodeAccess(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
+    const calls = log.debug.mock.calls;
+    expect(calls[0][0]()).toBe("Toker-express: decode access token");
+    expect(calls[1][0]()).toBe("Toker-express: Access token decoded for user 12345");
+    // Ensure no token values leak into logs
+    calls.forEach(call => {
+      const msg = call[0]();
+      expect(msg).not.toMatch(/eyJ/); // JWT header prefix
+    });
+  });
+
+});

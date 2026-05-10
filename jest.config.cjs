@@ -23,6 +23,11 @@ module.exports = {
   // The test environment that will be used for testing
   testEnvironment: "node",
 
+  // Directly resolve ESM-only @dwtechs packages to their dist files, bypassing exports field resolution
+  moduleNameMapper: {
+    "^@dwtechs/toker$": "<rootDir>/node_modules/@dwtechs/toker/dist/toker.js",
+  },
+
   // A map from regular expressions to paths to transformers
   transform: {
     "^.+\.jsx?$": "babel-jest",

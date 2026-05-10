@@ -443,4 +443,24 @@ describe("createTokens middleware", () => {
 
   });
 
+  describe("Logging functionality", () => {
+
+    it("should log debug messages and not include token values", async () => {
+      const { log } = require("@dwtechs/winstan");
+      res.locals.user.id = 12345;
+
+      await createTokens(req, res, next);
+
+      const calls = log.debug.mock.calls;
+      expect(calls[0][0]()).toBe("Toker-express: Create tokens for user 12345");
+      expect(calls[1][0]()).toBe("Toker-express: Tokens created for user 12345");
+      // Ensure no token values leak into logs
+      calls.forEach(call => {
+        const msg = call[0]();
+        expect(msg).not.toMatch(/eyJ/); // JWT header prefix
+      });
+    });
+
+  });
+
 });

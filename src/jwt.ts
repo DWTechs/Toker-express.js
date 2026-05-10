@@ -18,6 +18,8 @@ if (!TOKEN_SECRET)
   throw new Error(`${LOGS_PREFIX}Missing TOKEN_SECRET environment variable`);
 if (!isString(TOKEN_SECRET, "!0"))
   throw new Error(`${LOGS_PREFIX}Invalid TOKEN_SECRET environment variable`);
+if (TOKEN_SECRET.length < 32)
+  throw new Error(`${LOGS_PREFIX}TOKEN_SECRET must be at least 32 characters`);
 
 const secrets = [TOKEN_SECRET];
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600; // #10 * 60 => 10 mins
@@ -69,7 +71,7 @@ function createTokens(req: Request, res: Response, next: NextFunction): void {
     next(err);
     return;
   }
-  log.debug(() => `refreshToken='${rt}', accessToken='${at}'`);
+  log.debug(() => `${LOGS_PREFIX}Tokens created for user ${iss}`);
   
   // req.body.rows[0] already exists because user has already been validated at this stage
   // so we have user nickname and roles.
@@ -130,7 +132,7 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
     next(err);
     return;
   }
-  log.debug(() => `refreshToken='${rt}', accessToken='${at}'`);
+  log.debug(() => `${LOGS_PREFIX}Tokens refreshed for user ${iss}`);
 
   // req.body.rows[0] should already exist because consumer id has already been found at this stage
   req.body.rows[0].accessToken = at;
@@ -257,7 +259,7 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
     return;
   }
 
-  log.debug(() => `${LOGS_PREFIX}Decoded access token : ${JSON.stringify(dt)}`);
+  log.debug(() => `${LOGS_PREFIX}Access token decoded for user ${dt.iss}`);
   res.locals.tokens ??= {};
   res.locals.tokens.decodedAccess = dt;
   next();
@@ -299,7 +301,7 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
  */
 function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
   const t = req.body?.refreshToken;
-  log.debug(() => `${LOGS_PREFIX}decodeRefresh(token=${t})`);
+  log.debug(() => `${LOGS_PREFIX}Decoding refresh token`);
 
   if (!isJWT(t)) {
     next({statusCode: 401, message: `${LOGS_PREFIX}Invalid refresh token`});
@@ -319,7 +321,7 @@ function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
     return;
   }
 
-  log.debug(() => `${LOGS_PREFIX}Decoded refresh token : ${JSON.stringify(dt)}`);
+  log.debug(() => `${LOGS_PREFIX}Refresh token decoded for user ${dt.iss}`);
   res.locals.tokens ??= {};
   res.locals.tokens.decodedRefresh = dt;
   next();

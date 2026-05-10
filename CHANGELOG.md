@@ -1,8 +1,10 @@
+
 # 0.7.3 (May 09th 2026)
 
+  - `TOKEN_SECRET` is now required to be at least 32 characters long. An error is thrown at startup if this requirement is not met
   - Raised module compiler to `ES2022`
   - Dependencies updates:
-    - `@dwtechs/toker`: `0.2.0`,
+    - `@dwtechs/toker`: `0.2.1`,
 
 # 0.7.2 (Apr 24th 2026)
 

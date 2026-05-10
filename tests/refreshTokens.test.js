@@ -311,8 +311,7 @@ describe("refreshTokens middleware", () => {
 
       const calls = log.debug.mock.calls;
       expect(calls[0][0]()).toBe("Toker-express: Create tokens for user 12345");
-      expect(calls[1][0]()).toEqual(expect.stringContaining("refreshToken="));
-      expect(calls[1][0]()).toEqual(expect.stringContaining("accessToken="));
+      expect(calls[1][0]()).toBe("Toker-express: Tokens refreshed for user 12345");
     });
 
   });
