@@ -25,7 +25,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "author": {
     "name": "Ludovic Cluber",
@@ -44,7 +44,7 @@
   ],
   "dependencies": {
     "@dwtechs/checkard": "3.6.0",
-    "@dwtechs/toker": "0.1.2",
+    "@dwtechs/toker": "0.2.0",
     "@dwtechs/winstan": "0.7.0"
   },
   "devDependencies": {

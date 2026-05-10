@@ -1,3 +1,9 @@
+# 0.7.3 (May 09th 2026)
+
+  - Raised module compiler to `ES2022`
+  - Dependencies updates:
+    - `@dwtechs/toker`: `0.2.0`,
+
 # 0.7.2 (Apr 24th 2026)
 
   - Performance improvements
@@ -10,7 +16,7 @@
 # 0.7.1 (Feb 7th 2026)
 
   - Dependencies updates:
-    - "@dwtechs/toker": "0.1.2",
+    - `@dwtechs/toker`: `0.1.2`,
 
 # 0.7.0 (Jan 4th 2026)
 
@@ -84,8 +90,8 @@
   - Converted all middleware functions from async to synchronous
   - Updated function return types from Promise<void> to void
   - Dependencies updates:
-    - "@dwtechs/checkard": "3.6.0",
-    - "@dwtechs/winstan": "0.5.0"
+    - `@dwtechs/checkard`: `3.6.0`,
+    - `@dwtechs/winstan`: `0.5.0`
 
 # 0.1.2 (Oct 06th 2025)
 
@@ -97,9 +103,9 @@
 # 0.1.1 (Sep 10th 2025)
 
   - Dependencies updates:
-    - "@dwtechs/checkard": "3.5.1",
-    - "@dwtechs/toker": "0.1.1",
-    - "@dwtechs/winstan": "0.4.0"
+    - `@dwtechs/checkard`: `3.5.1`,
+    - `@dwtechs/toker`: `0.1.1`,
+    - `@dwtechs/winstan`: `0.4.0`
   - Fix error messages typo
 
 # 0.1.0 (Aug 12th 2025)

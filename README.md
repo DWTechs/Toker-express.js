@@ -2,16 +2,16 @@
 [![License: MIT](https://img.shields.io/npm/l/@dwtechs/toker-express.svg?color=brightgreen)](https://opensource.org/licenses/MIT)
 [![npm version](https://badge.fury.io/js/%40dwtechs%2Ftoker-express.svg)](https://www.npmjs.com/package/@dwtechs/toker-express)
 [![last version release date](https://img.shields.io/github/release-date/DWTechs/Toker-express.js)](https://www.npmjs.com/package/@dwtechs/toker-express)
-![Jest:coverage](https://img.shields.io/badge/Jest:coverage-94%25-brightgreen.svg)
+![Jest:coverage](https://img.shields.io/badge/Jest:coverage-93%25-brightgreen.svg)
 
 
 - [Synopsis](#synopsis)
-- [Support](#support)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Environment variables](#environment-variables)
 - [API Reference](#api-reference)
 - [Logs](#logs)
+- [Support](#support)
 - [Contributors](#contributors)
 - [Stack](#stack)
 
@@ -23,15 +23,8 @@ It includes @dwtechs/toker library and adds Express middlewares to be used in a 
 
 - 🪶 Very lightweight
 - 🧪 Thoroughly tested
-- 🚚 Shipped as EcmaScrypt Express module
+- 🚚 Shipped as ES2022 ECMAScript module
 - 📝 Written in Typescript
-
-
-## Support
-
-- node: 18
-
-This is the oldest targeted versions.  
 
 
 ## Installation
@@ -410,11 +403,16 @@ res.locals.tokens.decodedRefresh = decodedToken;
 All logs are in debug mode. Meaning they should not appear in production mode.
 Log messages are passed as lazy functions (`() => string`) so string interpolation and serialization are skipped entirely when debug logging is disabled.
 
+## Support
+
+| Environment | Version |
+| :---------- | :-----: |
+| Node.js     |  >= 22  |
+
 ## Contributors
 
 **Token-express.js** is still in development and we would be glad to get all the help you can provide.
 To contribute please read **[contributor.md](https://github.com/DWTechs/Token-express.js/blob/main/contributor.md)** for detailed installation guide.
-
 
 ## Stack
 

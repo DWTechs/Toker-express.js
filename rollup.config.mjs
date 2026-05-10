@@ -1,5 +1,5 @@
 const config =  {
-  input: "build/es6/toker-express.js",
+  input: "build/toker-express.js",
   output: {
     name: "winstan",
     file: "build/toker-express.mjs",
