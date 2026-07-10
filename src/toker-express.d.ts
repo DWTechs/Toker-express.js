@@ -5,6 +5,7 @@ declare function refreshTokens(req: Request, res: Response, next: NextFunction):
 declare function parseBearer(req: Request, res: Response, next: NextFunction): void;
 declare function decodeAccess(_req: Request, res: Response, next: NextFunction): void;
 declare function decodeRefresh(req: Request, res: Response, next: NextFunction): void;
+declare function clearRefreshCookie(_req: Request, res: Response, next: NextFunction): void;
 
 export { 
   createTokens,
@@ -12,6 +13,7 @@ export {
   parseBearer,
   decodeAccess,
   decodeRefresh,
+  clearRefreshCookie,
 };
 
 

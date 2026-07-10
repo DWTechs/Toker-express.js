@@ -9,6 +9,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Environment variables](#environment-variables)
+- [Cookies](#cookies)
 - [API Reference](#api-reference)
 - [Logs](#logs)
 - [Support](#support)
@@ -40,7 +41,7 @@ $ npm i @dwtechs/toker-express
 ```javascript
 
 // @ts-check
-import { parseBearer, createTokens, refreshTokens, decodeAccess, decodeRefresh, } from "@dwtechs/toker-express";
+import { parseBearer, createTokens, refreshTokens, decodeAccess, decodeRefresh, clearRefreshCookie, } from "@dwtechs/toker-express";
 import express from "express";
 const router = express.Router();
 
@@ -67,10 +68,13 @@ const refresh = [
   cEntity.update,
 ];
 
+// del also clears the refresh token cookie, when cookie transport is enabled
+// (REFRESH_TOKEN_COOKIE=true). No-op otherwise.
 const del = [
   checkToken,
   parseBearer,
   decodeAccess,
+  clearRefreshCookie,
   cEntity.delete,
 ];
 
@@ -95,9 +99,14 @@ router.delete("/", del);
 You can intialise the library using the following environment variables:
  
 ```bash
-  ACCESS_TOKEN_DURATION, 
-  REFRESH_TOKEN_DURATION
-  TOKEN_SECRET,
+  ACCESS_TOKEN_DURATION=600
+  REFRESH_TOKEN_DURATION=86400
+  TOKEN_SECRET=your-super-secret-key-at-least-32-characters-long
+  REFRESH_TOKEN_COOKIE=true
+  REFRESH_TOKEN_COOKIE_NAME=refreshToken
+  REFRESH_TOKEN_COOKIE_PATH=/
+  REFRESH_TOKEN_COOKIE_SAMESITE=strict
+  REFRESH_TOKEN_COOKIE_HTTPS_ONLY=true
 ```
 
 These environment variables will update the default values of the lib at start up.
@@ -110,6 +119,48 @@ Default values :
 ```javascript
 const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? ACCESS_TOKEN_DURATION : 600; // #10 * 60 => 10 mins
 const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? REFRESH_TOKEN_DURATION : 86400; // #24 * 60 * 60 => 1 day
+const cookieEnabled = REFRESH_TOKEN_COOKIE === "true"; // false by default
+const cookieName = REFRESH_TOKEN_COOKIE_NAME || "refreshToken";
+const cookiePath = REFRESH_TOKEN_COOKIE_PATH || "/";
+const cookieSameSite = ["strict", "lax", "none"].includes(REFRESH_TOKEN_COOKIE_SAMESITE) ? REFRESH_TOKEN_COOKIE_SAMESITE : "strict";
+const cookieSecure = REFRESH_TOKEN_COOKIE_HTTPS_ONLY === "false" ? false : true; // true by default
+```
+
+
+## Cookies
+
+By default, `createTokens()` and `refreshTokens()` only write the refresh token to `req.body.rows[0].refreshToken` (for the consumer app to persist it to the database), and `decodeRefresh()` only reads it back from `req.body.refreshToken`. This is unchanged and remains the default behavior.
+
+Setting `REFRESH_TOKEN_COOKIE=true` additionally turns on an httpOnly cookie transport for the refresh token, on top of the existing `req.body` behavior:
+
+- `createTokens()` / `refreshTokens()` also call `res.cookie(name, refreshToken, { httpOnly: true, secure, sameSite, path, maxAge })` so the client (e.g. a browser) receives the refresh token as a secure cookie instead of (or in addition to) the response body.
+- `decodeRefresh()` falls back to reading the token from `req.cookies[REFRESH_TOKEN_COOKIE_NAME]` whenever `req.body.refreshToken` is absent, so it works whether the client sends the token in the body or in the cookie.
+- `clearRefreshCookie()` is a new middleware you can add to your logout stack to clear the cookie with matching attributes (`path`, `sameSite`, `secure`, `httpOnly`).
+
+**Prerequisite:** reading `req.cookies` requires a cookie-parsing middleware such as **[cookie-parser](https://www.npmjs.com/package/cookie-parser)** to be registered on your Express app beforehand. `@dwtechs/toker-express` stays lightweight and does not bundle one.
+
+```javascript
+import express from "express";
+import cookieParser from "cookie-parser";
+
+const app = express();
+app.use(cookieParser());
+```
+
+Example logout stack using `clearRefreshCookie()`:
+
+```javascript
+import { parseBearer, decodeAccess, clearRefreshCookie } from "@dwtechs/toker-express";
+
+const del = [
+  checkToken,
+  parseBearer,
+  decodeAccess,
+  clearRefreshCookie,
+  cEntity.delete,
+];
+
+router.delete("/", del);
 ```
 
 ## API Reference
@@ -250,18 +301,22 @@ function parseBearer(req: Request, res: Response, next: NextFunction): void {}
 function decodeAccess(_req: Request, res: Response, next: NextFunction): void {}
 
 /**
- * Express middleware to decode and verify a refresh token from the request body.
+ * Express middleware to decode and verify a refresh token from the request body or cookie.
  * 
  * This middleware validates the JWT refresh token from `req.body.refreshToken`,
- * verifies its signature, structure, expiration, and the issuer (iss) claim,
- * then stores the decoded token in `res.locals.tokens.decodedRefresh` for use
- * by subsequent middleware.
+ * falling back to the `req.cookies` cookie (named after `REFRESH_TOKEN_COOKIE_NAME`,
+ * default `"refreshToken"`) when the body value is absent. Reading the cookie
+ * requires a cookie-parsing middleware (e.g. `cookie-parser`) to be registered
+ * upstream. It then verifies the token's signature, structure, expiration, and
+ * the issuer (iss) claim, and stores the decoded token in
+ * `res.locals.tokens.decodedRefresh` for use by subsequent middleware.
  * 
  * Note: Unlike decodeAccess, this middleware DOES check token expiration (exp claim).
  * Refresh tokens must be valid and not expired.
  * 
- * @param {Request} req - The Express request object. Should contain:
- *   - `req.body.refreshToken`: The JWT refresh token to decode and verify
+ * @param {Request} req - The Express request object. Should contain either:
+ *   - `req.body.refreshToken`: The JWT refresh token to decode and verify, or
+ *   - `req.cookies[REFRESH_TOKEN_COOKIE_NAME]`: The JWT refresh token read from a cookie
  * @param {Response} res - The Express response object.
  *   Decoded token will be added to `res.locals.tokens.decodedRefresh`
  * @param {NextFunction} next - The next middleware function to be called
@@ -283,6 +338,28 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {}
  * app.post('/refresh', parseBearer, decodeAccess, decodeRefresh, refreshTokens, ...);
  */
 function decodeRefresh(req: Request, res: Response, next: NextFunction): void {}
+
+/**
+ * Express middleware to clear the refresh token cookie set by createTokens/refreshTokens.
+ * 
+ * This middleware clears the cookie named after `REFRESH_TOKEN_COOKIE_NAME`
+ * (default `"refreshToken"`) using the same `path`, `sameSite`, `secure` and
+ * `httpOnly` attributes it was set with, so browsers reliably remove it.
+ * Intended for use in logout stacks. It is a no-op from the client's
+ * perspective if the cookie transport was never enabled or the cookie
+ * was never set.
+ * 
+ * @param {Request} _req - The Express request object (unused)
+ * @param {Response} res - The Express response object on which the cookie is cleared
+ * @param {NextFunction} next - Express next middleware function
+ *
+ * @returns {void}
+ *
+ * @example
+ * // Use in a logout stack
+ * app.delete('/', checkToken, parseBearer, decodeAccess, clearRefreshCookie, cEntity.delete);
+ */
+function clearRefreshCookie(_req: Request, res: Response, next: NextFunction): void {}
 
 ```
 
@@ -382,10 +459,10 @@ res.locals.tokens.decodedAccess = decodedToken;
 
 #### Refresh Token Decoding
 
-decodeRefresh() function will look for a token in the client request body.
+decodeRefresh() function will look for a token in the client request body, falling back to a cookie when the body value is absent (see [Cookies](#cookies)).
 
 ```Javascript
-const token = req.body.refreshToken;
+const token = req.body?.refreshToken ?? req.cookies?.[cookieName];
 ```
 
 It will then send the decoded token in the res object.
@@ -395,6 +472,14 @@ res.locals.tokens.decodedRefresh = decodedToken;
 ```
 
 **Important:** Unlike `decodeAccess()`, this middleware **does check token expiration**. Refresh tokens must be valid and not expired.
+
+#### Clearing the Refresh Token Cookie
+
+clearRefreshCookie() clears the refresh token cookie (see [Cookies](#cookies)). Add it to your logout stack.
+
+```Javascript
+res.clearCookie(cookieName, { httpOnly: true, secure, sameSite, path });
+```
 
 
 ## Logs

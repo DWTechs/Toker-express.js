@@ -463,4 +463,108 @@ describe("createTokens middleware", () => {
 
   });
 
+  describe("Cookie transport (REFRESH_TOKEN_COOKIE)", () => {
+
+    const baseEnv = {
+      TOKEN_SECRET: "YS1zdHJpbmctc2VjcmV0LWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc",
+      ACCESS_TOKEN_DURATION: "600",
+      REFRESH_TOKEN_DURATION: "86400",
+    };
+
+    afterEach(() => {
+      process.env = originalEnv;
+      jest.resetModules();
+    });
+
+    it("should not set a cookie when REFRESH_TOKEN_COOKIE is not enabled", async () => {
+      jest.resetModules();
+      process.env = { ...originalEnv, ...baseEnv };
+      const { createTokens: createTokensNoCookie } = require("../dist/toker-express.js");
+
+      const reqNoCookie = { body: { rows: [{}] } };
+      const resNoCookie = { locals: { user: { id: 12345 } }, cookie: jest.fn() };
+      const nextNoCookie = jest.fn();
+
+      await createTokensNoCookie(reqNoCookie, resNoCookie, nextNoCookie);
+
+      expect(nextNoCookie).toHaveBeenCalledWith();
+      expect(resNoCookie.cookie).not.toHaveBeenCalled();
+    });
+
+    it("should set a refresh token cookie with default options when REFRESH_TOKEN_COOKIE=true", async () => {
+      jest.resetModules();
+      process.env = { ...originalEnv, ...baseEnv, REFRESH_TOKEN_COOKIE: "true" };
+      const { createTokens: createTokensWithCookie } = require("../dist/toker-express.js");
+
+      const reqCookie = { body: { rows: [{}] } };
+      const resCookie = { locals: { user: { id: 12345 } }, cookie: jest.fn() };
+      const nextCookie = jest.fn();
+
+      await createTokensWithCookie(reqCookie, resCookie, nextCookie);
+
+      expect(nextCookie).toHaveBeenCalledWith();
+      expect(resCookie.cookie).toHaveBeenCalledTimes(1);
+      expect(resCookie.cookie).toHaveBeenCalledWith(
+        "refreshToken",
+        reqCookie.body.rows[0].refreshToken,
+        {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          path: "/",
+          maxAge: 86400 * 1000,
+        }
+      );
+    });
+
+    it("should honor custom cookie name, path, sameSite and secure options", async () => {
+      jest.resetModules();
+      process.env = {
+        ...originalEnv,
+        ...baseEnv,
+        REFRESH_TOKEN_COOKIE: "true",
+        REFRESH_TOKEN_COOKIE_NAME: "myRefresh",
+        REFRESH_TOKEN_COOKIE_PATH: "/api/auth",
+        REFRESH_TOKEN_COOKIE_SAMESITE: "lax",
+        REFRESH_TOKEN_COOKIE_HTTPS_ONLY: "false",
+      };
+      const { createTokens: createTokensCustom } = require("../dist/toker-express.js");
+
+      const reqCustom = { body: { rows: [{}] } };
+      const resCustom = { locals: { user: { id: 12345 } }, cookie: jest.fn() };
+      const nextCustom = jest.fn();
+
+      await createTokensCustom(reqCustom, resCustom, nextCustom);
+
+      expect(nextCustom).toHaveBeenCalledWith();
+      expect(resCustom.cookie).toHaveBeenCalledWith(
+        "myRefresh",
+        reqCustom.body.rows[0].refreshToken,
+        {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          path: "/api/auth",
+          maxAge: 86400 * 1000,
+        }
+      );
+    });
+
+    it("should still write the refresh token to req.body.rows[0] when cookie transport is enabled", async () => {
+      jest.resetModules();
+      process.env = { ...originalEnv, ...baseEnv, REFRESH_TOKEN_COOKIE: "true" };
+      const { createTokens: createTokensWithCookie } = require("../dist/toker-express.js");
+
+      const reqCookie = { body: { rows: [{}] } };
+      const resCookie = { locals: { user: { id: 12345 } }, cookie: jest.fn() };
+      const nextCookie = jest.fn();
+
+      await createTokensWithCookie(reqCookie, resCookie, nextCookie);
+
+      expect(reqCookie.body.rows[0]).toHaveProperty("accessToken");
+      expect(reqCookie.body.rows[0]).toHaveProperty("refreshToken");
+    });
+
+  });
+
 });

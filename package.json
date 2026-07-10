@@ -1,6 +1,6 @@
 {
   "name": "@dwtechs/toker-express",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "type": "module",
   "description": "Open source JWT management library for Express.js to refresh and decode tokens safely.",
   "keywords": [
@@ -43,9 +43,9 @@
     "dist/"
   ],
   "dependencies": {
-    "@dwtechs/checkard": "3.6.0",
-    "@dwtechs/toker": "0.2.1",
-    "@dwtechs/winstan": "0.7.0"
+    "@dwtechs/checkard": "3.6.1",
+    "@dwtechs/toker": "0.2.2",
+    "@dwtechs/winstan": "0.7.1"
   },
   "devDependencies": {
     "@babel/preset-env": "7.26.0",

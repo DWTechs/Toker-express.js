@@ -555,4 +555,119 @@ describe("decodeRefresh middleware", () => {
 
   });
 
+  describe("Cookie fallback (req.cookies)", () => {
+
+    it("should decode a refresh token found only in req.cookies.refreshToken", async () => {
+      const validToken = sign(12345, 3600, "refresh", secrets);
+      req.body = {}; // no body token
+      req.cookies = { refreshToken: validToken };
+
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      await decodeRefresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      expect(res.locals.tokens.decodedRefresh).toBeDefined();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(12345);
+    });
+
+    it("should prefer req.body.refreshToken over req.cookies.refreshToken when both are present", async () => {
+      const bodyToken = sign(11111, 3600, "refresh", secrets);
+      const cookieToken = sign(22222, 3600, "refresh", secrets);
+      req.body.refreshToken = bodyToken;
+      req.cookies = { refreshToken: cookieToken };
+
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      await decodeRefresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      expect(res.locals.tokens.decodedRefresh.iss).toBe(11111);
+    });
+
+    it("should return 401 error when token is absent from both req.body and req.cookies", async () => {
+      req.body = {};
+      req.cookies = {};
+
+      await decodeRefresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 401,
+        message: "Toker-express: Invalid refresh token"
+      });
+    });
+
+    it("should return 401 error when req.cookies is undefined and req.body has no refreshToken", async () => {
+      req.body = {};
+      req.cookies = undefined;
+
+      await decodeRefresh(req, res, next);
+
+      expect(next).toHaveBeenCalledWith({
+        statusCode: 401,
+        message: "Toker-express: Invalid refresh token"
+      });
+    });
+
+  });
+
+  describe("Custom cookie name (REFRESH_TOKEN_COOKIE_NAME)", () => {
+
+    afterEach(() => {
+      process.env = originalEnv;
+      jest.resetModules();
+    });
+
+    it("should read the refresh token from a custom cookie name", async () => {
+      jest.resetModules();
+      process.env = {
+        ...originalEnv,
+        TOKEN_SECRET: "YS1zdHJpbmctc2VjcmV0LWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc",
+        ACCESS_TOKEN_DURATION: "600",
+        REFRESH_TOKEN_DURATION: "86400",
+        REFRESH_TOKEN_COOKIE_NAME: "myRefresh",
+      };
+      const { decodeRefresh: decodeRefreshCustom } = require("../dist/toker-express.js");
+      const { sign: signCustom } = require("@dwtechs/toker");
+
+      const validToken = signCustom(12345, 3600, "refresh", secrets);
+      const reqCustom = { body: {}, cookies: { myRefresh: validToken } };
+      const resCustom = { locals: { route: {}, tokens: {} } };
+      const nextCustom = jest.fn();
+
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      await decodeRefreshCustom(reqCustom, resCustom, nextCustom);
+
+      expect(nextCustom).toHaveBeenCalledWith();
+      expect(resCustom.locals.tokens.decodedRefresh.iss).toBe(12345);
+    });
+
+    it("should not find the refresh token under the default cookie name once a custom name is configured", async () => {
+      jest.resetModules();
+      process.env = {
+        ...originalEnv,
+        TOKEN_SECRET: "YS1zdHJpbmctc2VjcmV0LWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc",
+        ACCESS_TOKEN_DURATION: "600",
+        REFRESH_TOKEN_DURATION: "86400",
+        REFRESH_TOKEN_COOKIE_NAME: "myRefresh",
+      };
+      const { decodeRefresh: decodeRefreshCustom } = require("../dist/toker-express.js");
+      const { sign: signCustom } = require("@dwtechs/toker");
+
+      const validToken = signCustom(12345, 3600, "refresh", secrets);
+      const reqCustom = { body: {}, cookies: { refreshToken: validToken } };
+      const resCustom = { locals: { route: {}, tokens: {} } };
+      const nextCustom = jest.fn();
+
+      await decodeRefreshCustom(reqCustom, resCustom, nextCustom);
+
+      expect(nextCustom).toHaveBeenCalledWith({
+        statusCode: 401,
+        message: "Toker-express: Invalid refresh token"
+      });
+    });
+
+  });
+
 });

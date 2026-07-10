@@ -1,30 +1,9 @@
 import { sign, verify, parseBearer as pb } from "@dwtechs/toker";
-import { isJWT, isNumber, isString, isValidInteger } from "@dwtechs/checkard";
+import { isJWT, isValidInteger } from "@dwtechs/checkard";
 import { log } from "@dwtechs/winstan";
 import type { Request, Response, NextFunction } from 'express';
-
-const { 
-  TOKEN_SECRET, 
-  ACCESS_TOKEN_DURATION,
-  REFRESH_TOKEN_DURATION
-} = process.env;
-
-/**
- * Prefix for all Toker error messages
- */
-const LOGS_PREFIX = "Toker-express: ";
-
-if (!TOKEN_SECRET)
-  throw new Error(`${LOGS_PREFIX}Missing TOKEN_SECRET environment variable`);
-if (!isString(TOKEN_SECRET, "!0"))
-  throw new Error(`${LOGS_PREFIX}Invalid TOKEN_SECRET environment variable`);
-if (TOKEN_SECRET.length < 32)
-  throw new Error(`${LOGS_PREFIX}TOKEN_SECRET must be at least 32 characters`);
-
-const secrets = [TOKEN_SECRET];
-const accessDuration = isNumber(ACCESS_TOKEN_DURATION, false) ? Number(ACCESS_TOKEN_DURATION) : 600; // #10 * 60 => 10 mins
-const refreshDuration = isNumber(REFRESH_TOKEN_DURATION, false) ? Number(REFRESH_TOKEN_DURATION) : 86400; // #24 * 60 * 60 => 1 day
-
+import { LOGS_PREFIX, secrets, accessDuration, refreshDuration, cookieName } from './config';
+import { setRefreshCookie } from './cookies';
 
 /**
  * Express middleware to create new access and refresh JWT tokens for a user.
@@ -78,7 +57,11 @@ function createTokens(req: Request, res: Response, next: NextFunction): void {
   // Consumer is gonna be added to database at next stage using req.body.rows array.
   req.body.rows[0].accessToken = at; 
   req.body.rows[0].refreshToken = rt;
-  
+
+  // Additionally set the refresh token as an httpOnly cookie when enabled via
+  // REFRESH_TOKEN_COOKIE. Does not affect req.body.rows[0] above.
+  setRefreshCookie(res, rt);
+
   next();
 
 }
@@ -137,7 +120,11 @@ function refreshTokens(req: Request, res: Response, next: NextFunction): void {
   // req.body.rows[0] should already exist because consumer id has already been found at this stage
   req.body.rows[0].accessToken = at;
   req.body.rows[0].refreshToken = rt;
-  
+
+  // Additionally set the refresh token as an httpOnly cookie when enabled via
+  // REFRESH_TOKEN_COOKIE. Does not affect req.body.rows[0] above.
+  setRefreshCookie(res, rt);
+
   next();
 
 }
@@ -267,18 +254,23 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
 
 
 /**
- * Express middleware to decode and verify a refresh token from the request body.
+ * Express middleware to decode and verify a refresh token from the request body or cookie.
  * 
  * This middleware validates the JWT refresh token from `req.body.refreshToken`,
- * verifies its signature, structure, expiration, and the issuer (iss) claim,
- * then stores the decoded token in `res.locals.tokens.decodedRefresh` for use
- * by subsequent middleware.
+ * falling back to the `req.cookies` cookie (named after `REFRESH_TOKEN_COOKIE_NAME`,
+ * default `"refreshToken"`) when the body value is absent. Reading the cookie
+ * requires a cookie-parsing middleware (e.g. `cookie-parser`) to be registered
+ * upstream so that `req.cookies` is populated; this library does not bundle one.
+ * It then verifies the token's signature, structure, expiration, and the issuer
+ * (iss) claim, and stores the decoded token in `res.locals.tokens.decodedRefresh`
+ * for use by subsequent middleware.
  * 
  * Note: Unlike decodeAccess, this middleware DOES check token expiration (exp claim).
  * Refresh tokens must be valid and not expired.
  * 
- * @param {Request} req - The Express request object. Should contain:
- *   - `req.body.refreshToken`: The JWT refresh token to decode and verify
+ * @param {Request} req - The Express request object. Should contain either:
+ *   - `req.body.refreshToken`: The JWT refresh token to decode and verify, or
+ *   - `req.cookies[REFRESH_TOKEN_COOKIE_NAME]`: The JWT refresh token read from a cookie
  * @param {Response} res - The Express response object.
  *   Decoded token will be added to `res.locals.tokens.decodedRefresh`
  * @param {NextFunction} next - The next middleware function to be called
@@ -300,7 +292,7 @@ function decodeAccess(_req: Request, res: Response, next: NextFunction): void {
  * app.post('/refresh', parseBearer, decodeAccess, decodeRefresh, refreshTokens, ...);
  */
 function decodeRefresh(req: Request, res: Response, next: NextFunction): void {
-  const t = req.body?.refreshToken;
+  const t = req.body?.refreshToken ?? req.cookies?.[cookieName];
   log.debug(() => `${LOGS_PREFIX}Decoding refresh token`);
 
   if (!isJWT(t)) {
@@ -334,3 +326,4 @@ export {
   decodeAccess,
   decodeRefresh,
 };
+

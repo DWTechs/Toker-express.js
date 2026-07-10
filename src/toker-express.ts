@@ -6,4 +6,5 @@ export {
   decodeAccess,
   decodeRefresh,
 } from './jwt';
+export { clearRefreshCookie } from './cookies';
   

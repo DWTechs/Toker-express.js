@@ -1,4 +1,16 @@
 
+# 0.8.0 (Jul 9th 2026)
+
+  - Added optional httpOnly cookie transport for the refresh token, fully backward-compatible (disabled by default):
+    - New environment variables: `REFRESH_TOKEN_COOKIE`, `REFRESH_TOKEN_COOKIE_NAME`, `REFRESH_TOKEN_COOKIE_PATH`, `REFRESH_TOKEN_COOKIE_SAMESITE`, `REFRESH_TOKEN_COOKIE_HTTPS_ONLY`
+    - `createTokens()` and `refreshTokens()` now also set the refresh token as an httpOnly cookie via `res.cookie()` when `REFRESH_TOKEN_COOKIE=true`, in addition to the existing `req.body.rows[0].refreshToken` write
+    - `decodeRefresh()` now falls back to `req.cookies[REFRESH_TOKEN_COOKIE_NAME]` when `req.body.refreshToken` is absent (requires a cookie-parsing middleware such as `cookie-parser`)
+    - New `clearRefreshCookie()` middleware to clear the refresh token cookie in logout stacks
+  - Dependencies updates:
+    - "@dwtechs/toker": "0.2.1",
+    - "@dwtechs/checkard": "3.6.1",
+    - "@dwtechs/winstan": "0.7.1"
+
 # 0.7.3 (May 09th 2026)
 
   - `TOKEN_SECRET` is now required to be at least 32 characters long. An error is thrown at startup if this requirement is not met
