@@ -7,16 +7,16 @@
     - `decodeRefresh()` now falls back to `req.cookies[REFRESH_TOKEN_COOKIE_NAME]` when `req.body.refreshToken` is absent (requires a cookie-parsing middleware such as `cookie-parser`)
     - New `clearRefreshCookie()` middleware to clear the refresh token cookie in logout stacks
   - Dependencies updates:
-    - "@dwtechs/toker": "0.2.1",
-    - "@dwtechs/checkard": "3.6.1",
-    - "@dwtechs/winstan": "0.7.1"
+    - `@dwtechs/toker`: `0.2.2`,
+    - `@dwtechs/checkard`: `3.6.1`,
+    - `@dwtechs/winstan`: `0.7.1`
 
 # 0.7.3 (May 09th 2026)
 
   - `TOKEN_SECRET` is now required to be at least 32 characters long. An error is thrown at startup if this requirement is not met
   - Raised module compiler to `ES2022`
   - Dependencies updates:
-    - `@dwtechs/toker`: `0.2.1`,
+    - `@dwtechs/toker`: `0.2.1`
 
 # 0.7.2 (Apr 24th 2026)
 
@@ -30,7 +30,7 @@
 # 0.7.1 (Feb 7th 2026)
 
   - Dependencies updates:
-    - `@dwtechs/toker`: `0.1.2`,
+    - `@dwtechs/toker`: `0.1.2`
 
 # 0.7.0 (Jan 4th 2026)
 
