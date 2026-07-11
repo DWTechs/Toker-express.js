@@ -13,6 +13,10 @@ jest.mock("@dwtechs/winstan", () => ({
   }
 }));
 
+// Capture the mocked log reference now, before any jest.resetModules() calls
+// elsewhere in this file swap out the module registry (and thus the mock).
+const { log } = require("@dwtechs/winstan");
+
 // Mock environment variables
 const originalEnv = process.env;
 beforeAll(() => {
@@ -65,7 +69,7 @@ describe("clearRefreshCookie middleware", () => {
     });
 
     it("should not throw when req has no properties", async () => {
-      await expect(clearRefreshCookie({}, res, next)).resolves.not.toThrow();
+      expect(() => clearRefreshCookie({}, res, next)).not.toThrow();
       expect(next).toHaveBeenCalledWith();
     });
 
@@ -161,8 +165,6 @@ describe("clearRefreshCookie middleware", () => {
   describe("Logging functionality", () => {
 
     it("should log a debug message when clearing the cookie", async () => {
-      const { log } = require("@dwtechs/winstan");
-
       await clearRefreshCookie(req, res, next);
 
       const calls = log.debug.mock.calls;
